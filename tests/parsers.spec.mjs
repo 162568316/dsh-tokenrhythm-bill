@@ -10,6 +10,7 @@ import {
   summarizeDailyLogs,
   maskSecret,
   extractSessionCookie,
+  extractCsrfCookie,
   stripYamlComments,
 } from '../lib/index.js'
 
@@ -303,6 +304,28 @@ test('extractSessionCookie: 整段 Cookie / 键值对 / 裸值 / 垃圾输入', 
   assert.equal(extractSessionCookie('sess_plain789'), 'sess_plain789')
   assert.equal(extractSessionCookie(''), '')
   assert.equal(extractSessionCookie('随便一句话'), '')
+})
+
+test('extractCsrfCookie: 整段 Cookie 提取 tr_csrf / 裸 session 不含则空', () => {
+  assert.equal(extractCsrfCookie('tr_csrf=tok123; tr_session=sess_abc'), 'tok123')
+  assert.equal(extractCsrfCookie('tr_session=sess_abc; tr_csrf = tok_xyz ; x=1'), 'tok_xyz')
+  assert.equal(extractCsrfCookie('sess_plain789'), '')
+  assert.equal(extractCsrfCookie(''), '')
+})
+
+test('平台变更请求 CSRF 防护：统一头与 403 自愈（源码断言）', async () => {
+  const { readFileSync } = await import('node:fs')
+  const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
+  // 变更请求需 CSRF 双提交 + fetch-metadata 校验（浏览器自动带，node 须手动补）
+  assert.ok(src.includes("'X-CSRF-Token'"), 'trHeaders 应支持 X-CSRF-Token 双提交头')
+  assert.ok(src.includes("'Sec-Fetch-Site': 'same-origin'"), '平台请求应带 Sec-Fetch-Site（fetch-metadata 校验）')
+  assert.ok(src.includes('Origin: TOKENRHYTHM_BASE'), '平台请求应带 Origin')
+  // 403 CSRF_INVALID 自愈：/auth/me 刷新 cookie 对后重试一次
+  assert.ok(src.includes('CSRF_INVALID'), '变更封装应识别 CSRF_INVALID')
+  assert.ok(src.includes('/api/auth/me'), '自愈应经 /api/auth/me 刷新 cookie 对')
+  assert.ok(src.includes('const trMutate'), '变更类请求应走 trMutate 自愈封装')
+  // tr_csrf 与 tr_session 一同持久化（0600）
+  assert.ok(src.includes('csrf: state.csrf'), 'state 应持久化 csrf')
 })
 
 test('stripYamlComments: 引号内 # 与行中 # 的边界', () => {

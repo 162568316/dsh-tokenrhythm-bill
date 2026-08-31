@@ -138,6 +138,8 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(!src.includes("key: 'ld' }, '加载中…'"), '不应再有纯文字加载占位')
     // 分类筛选行滚动固定：sticky 钉在滚动容器顶部，负 margin 铺满左右内边距并垫实色底。
     assert.ok(src.includes('.dsh-mb-cats{position:sticky'), '模型分类筛选行应滚动固定（sticky）')
+    // 缓存标签并入分类行，整行保持一行（放不下横向滚动）。
+    assert.ok(src.includes('const cacheTag') && src.includes('flex-wrap:nowrap') && src.includes('.dsh-mb-cache-tag{'), '缓存标签应并入分类行且整行保持一行')
     // UI 与 DSH 设计系统一致：全量引用 --dsw-alias-* 设计令牌，不再有本地配色主题。
     assert.ok(src.includes('--dsw-alias-bg-layer-2'), '面板底色应使用 DSH 层级令牌')
     assert.ok(src.includes('--dsw-alias-state-business-primary'), '强调色应为 DSH 品牌蓝')
