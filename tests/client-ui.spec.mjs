@@ -132,6 +132,12 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(!src.includes("'¥',"), '入口不应再用 ¥ 文字字形')
     // 设置页备用粘贴：默认折叠。
     assert.ok(src.includes('useState(false) // 默认折叠'), '备用粘贴区应默认折叠')
+    // 加载骨架屏：三页签的加载占位与真实内容同构（shimmer 微光扫过，尊重系统减动效）。
+    assert.ok(src.includes('dsh-mb-skel-cards') && src.includes('dsh-mb-skel-hero') && src.includes('dsh-mb-skel-rows'), '模型/余额/密钥页签应有同构骨架屏占位')
+    assert.ok(src.includes('@keyframes dsh-mb-shimmer') && src.includes('prefers-reduced-motion:reduce'), '骨架屏应有 shimmer 动效并尊重系统减动效设置')
+    assert.ok(!src.includes("key: 'ld' }, '加载中…'"), '不应再有纯文字加载占位')
+    // 分类筛选行滚动固定：sticky 钉在滚动容器顶部，负 margin 铺满左右内边距并垫实色底。
+    assert.ok(src.includes('.dsh-mb-cats{position:sticky'), '模型分类筛选行应滚动固定（sticky）')
     // UI 与 DSH 设计系统一致：全量引用 --dsw-alias-* 设计令牌，不再有本地配色主题。
     assert.ok(src.includes('--dsw-alias-bg-layer-2'), '面板底色应使用 DSH 层级令牌')
     assert.ok(src.includes('--dsw-alias-state-business-primary'), '强调色应为 DSH 品牌蓝')
