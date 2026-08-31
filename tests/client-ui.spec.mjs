@@ -125,6 +125,13 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(src.includes('height:42px') && src.includes('padding:0 8px 0 6px'), '入口行几何应对齐设置触发行（内边距补偿，无出血）')
     assert.ok(!src.includes('width:calc(100% + 4px)'), '不应使用负 margin 出血（会在槽位容器里产生横向滚动条）')
     assert.ok(src.includes('scrollbar-gutter:auto'), '应去掉宿主槽位的常驻滚动条槽')
+    // 入口图标：基元律动品牌标（brand-logo.svg 图形部分紧裁 viewBox，fill:currentColor，
+    // SVG 几何盒 16/18px 与原生线稿图标一致——文字字形度量会导致折叠态图标跑偏）。
+    assert.ok(src.includes('const EntryMark') && src.includes("MARK_VIEWBOX = '10.4213 15.2079 60.8522 37.2003'"), '入口图标应为基元律动品牌标 SVG（紧裁 viewBox）')
+    assert.ok(src.includes('fill: \'currentColor\''), '品牌标应跟随文字色（明暗主题适配）')
+    assert.ok(!src.includes("'¥',"), '入口不应再用 ¥ 文字字形')
+    // 设置页备用粘贴：默认折叠。
+    assert.ok(src.includes('useState(false) // 默认折叠'), '备用粘贴区应默认折叠')
     // UI 与 DSH 设计系统一致：全量引用 --dsw-alias-* 设计令牌，不再有本地配色主题。
     assert.ok(src.includes('--dsw-alias-bg-layer-2'), '面板底色应使用 DSH 层级令牌')
     assert.ok(src.includes('--dsw-alias-state-business-primary'), '强调色应为 DSH 品牌蓝')
