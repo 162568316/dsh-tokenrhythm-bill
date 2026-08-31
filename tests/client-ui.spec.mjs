@@ -114,13 +114,44 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(injected.includes('sidebar.footer.action'))
     assert.ok(injected.includes('shell.overlay'))
     assert.ok(effects.some((l) => String(l).includes('alert poll')))
-    // 三套可切换主题（F/G/H）的标志性样式。
-    assert.ok(src.includes('backdrop-filter'), 'CSS 应包含 backdrop-filter')
-    assert.ok(src.includes('background-clip:text'), 'CSS 应包含渐变文字')
-    for (const th of ['dsh-mb-th-F', 'dsh-mb-th-G', 'dsh-mb-th-H']) {
-      assert.ok(src.includes(th), 'CSS 应定义主题 ' + th)
-    }
-    assert.ok(src.includes("dsh-mb-th-' + (s.theme || 'H')"), '面板/入口应按主题挂类')
+    // 侧栏入口：形态由宿主 wide 标志驱动（data-wide 属性 + rail 类），带容器查询回退。
+    assert.ok(src.includes("'data-wide'"), 'EntryButton 应在宿主传 wide 时挂 data-wide 属性')
+    assert.ok(src.includes("[data-wide=\"0\"]"), 'CSS 应定义 rail（收起）形态')
+    assert.ok(src.includes('@container (max-width:60px)'), '宿主未传 wide 时应保留容器查询回退')
+    assert.ok(src.includes('dsh-mb-wide-in'), 'label 重挂时应有 wide-in 淡入动画（对齐原生 newSessionLabel）')
+    // 入口与原生「设置」触发行对齐：同高 42px、图标起点 18px（左 6px 内边距补偿，
+    // 不用负 margin 出血——槽位容器 overflow-x:hidden 会裁掉出血且不产生横向滚动条），
+    // 并去掉宿主槽位 scrollbar-gutter:stable 的常驻滚动条槽。
+    assert.ok(src.includes('height:42px') && src.includes('padding:0 8px 0 6px'), '入口行几何应对齐设置触发行（内边距补偿，无出血）')
+    assert.ok(!src.includes('width:calc(100% + 4px)'), '不应使用负 margin 出血（会在槽位容器里产生横向滚动条）')
+    assert.ok(src.includes('scrollbar-gutter:auto'), '应去掉宿主槽位的常驻滚动条槽')
+    // UI 与 DSH 设计系统一致：全量引用 --dsw-alias-* 设计令牌，不再有本地配色主题。
+    assert.ok(src.includes('--dsw-alias-bg-layer-2'), '面板底色应使用 DSH 层级令牌')
+    assert.ok(src.includes('--dsw-alias-state-business-primary'), '强调色应为 DSH 品牌蓝')
+    assert.ok(src.includes('--ds-ease-in-out') && src.includes('--ds-transition-duration-fast'), '动效应使用 DSH 缓动/时长令牌')
+    // 卡片可见性：淡填充 + shadow-lv1 抬升、hover 用 accent 填充 + shadow-lv2（DSH 画法）。
+    assert.ok(src.includes('--dsw-shadow-lv1') && src.includes('--dsw-shadow-lv2'), '模型卡片应有 DSH 层级阴影')
+    assert.ok(src.includes('--dsw-alias-interactive-bg-hover-accent'), '卡片 hover 应使用 DSH accent 交互底色')
+    assert.ok(!src.includes('dsh-mb-th-'), '不应再有三套本地主题类')
+    assert.ok(!src.includes('backdrop-filter'), '面板应为实色卡面（DSH 无磨砂卡面）')
+    assert.ok(!src.includes('background-clip:text'), 'hero 数字不再使用渐变文字')
+    // 余额主卡：双统计布局（账户余额主位 + 限时额度副位/倒计时胶囊 + 占比条）。
+    assert.ok(src.includes('dsh-mb-hero-stats') && src.includes('dsh-mb-hero-bar') && src.includes('dsh-mb-hero-chip'), '余额主卡应为双统计 + 倒计时胶囊 + 占比条布局')
+    assert.ok(src.includes('const fmtCny = '), '主卡金额应有千分位格式化助手 fmtCny')
+    // 趋势图：悬停浮出模型明细气泡（深色 tooltip），不再用原生 title；首末列防出面板。
+    assert.ok(src.includes('dsh-mb-trend-tip') && src.includes('edge-l') && src.includes('edge-r'), '趋势柱悬停应有模型明细气泡（含首末列边缘修正）')
+    assert.ok(src.includes('--dsw-alias-tooltip-bg') && src.includes('--dsw-static-neutral-bluish-00'), '气泡应对齐 DSH 原生 tooltip 深底白字规范')
+    assert.ok(!src.includes('title: b.date'), '趋势柱不应再用原生 title 气泡')
+    // 设置页签：进入即拉取账号列表（否则刷新后账号管理只有表单、没有列表）。
+    assert.ok(src.includes("view !== 'settings'") && src.includes('loadAccounts()'), '进入设置页签应自动拉取账号列表')
+    assert.ok(src.includes("'账号管理'"), '设置页账号卡片标题应为「账号管理」')
+    // 密码可见性切换：图标按钮（eye/eye-off 线稿），不再用「明文/隐藏/查看」汉字文案。
+    assert.ok(src.includes('const EyeIcon'), '密码可见性切换应使用 EyeIcon 线稿图标')
+    assert.ok(!src.includes("? '隐藏' : '明文'") && !src.includes("? '隐藏' : '查看'"), '密码切换按钮不应再使用汉字文案')
+    // 死代码回归防护：renderKeysTab 只允许定义一次（第二次定义曾覆盖带复制按钮的版本）。
+    assert.equal((src.match(/function renderKeysTab/g) || []).length, 1, 'renderKeysTab 只允许定义一次')
+    assert.ok(src.includes('复制完整值'), '密钥页签应保留「复制完整值」能力')
+    assert.ok(src.includes('基元律动-费用中心'), '入口/标题文案应为「基元律动-费用中心」')
   } finally {
     for (const fn of cleanups) fn()
   }
