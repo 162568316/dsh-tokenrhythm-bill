@@ -24,7 +24,8 @@
     "en": "Tokenrhythm model / balance / usage dashboard: a sidebar footer entry opens a draggable panel whose Models tab filters the gateway model list by category (text / image / audio / video / embedding) showing name, context window, input / output / cache pricing, discount and image pricing with capability badges; the Balance tab shows the remaining limited-time quota with expiry and today's usage aggregated from call logs, auto-refreshing every 60 s. Balance queries work via platform account login or a pasted tr_session cookie; API keys and cookies stay host-side and are only ever masked in the browser.",
     "zh": "基元律动模型 / 余额 / 用量面板：侧栏底部「¥ 模型 / 余额」入口打开可拖拽面板。模型页签按分类（文本 / 图像 / 音频 / 视频 / 向量）筛选网关模型列表，展示显示名、上下文、输入 / 输出 / 缓存单价、折扣价、图片单价与能力徽标；余额页签展示剩余限时额度与到期时间，并按本地 0 点起聚合的调用日志统计当日用量，每 60 秒自动刷新。支持平台账号登录或粘贴 tr_session 会话 Cookie 查询余额；API Key 与 Cookie 只存 host 进程内存与本地状态文件，浏览器侧仅显示掩码。"
   },
-  "install": "dsh plugin --profile web add dsh-tokenrhythm-bill"
+  "install": "dsh plugin --profile web add dsh-tokenrhythm-bill",
+  "npm": "dsh-tokenrhythm-bill"
 }
 ```
 
@@ -34,17 +35,13 @@
 
 | 条目字段 | 安装行为 |
 |----------|----------|
-| 无 `npm`（当前状态） | `github:162568316/dsh-tokenrhythm-bill`，整仓下载 |
-| `npm` + `"npm": "dsh-tokenrhythm-bill"` | 秒级 npm 安装，无需构建脚本 |
+| `"npm": "dsh-tokenrhythm-bill"`（✅ 0.1.0 已发布，PR 里带上） | 秒级 npm 安装，无需构建脚本 |
 | `tarball` 指向本仓库 Release 的 `.tgz` | 预构建安装（URL 必须属于本仓库，跨仓库会被拒绝） |
+| 无 `npm` / `tarball` 时 | `github:162568316/dsh-tokenrhythm-bill`，整仓下载 |
 
-**发布 npm 后**，把下面一行加进条目即可升级安装路线：
+npm 包 0.1.0 已发布并通过 `repository` 校验（`npm view dsh-tokenrhythm-bill repository.url` 返回本仓库）。
 
-```json
-"npm": "dsh-tokenrhythm-bill"
-```
-
-## npm 发布清单
+## npm 发布清单（0.1.0 ✅ 已完成，后续版本照此流程）
 
 1. `package.json` 元数据已补齐：`repository` / `bugs` / `homepage` 指向本仓库
    （目录 CI 靠 `repository` 做 npm ↔ 仓库绑定校验，即 repo-verified）；
