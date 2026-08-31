@@ -151,6 +151,10 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     // 账号切换：余额立即重拉（sessionAccount 进 effect 依赖），页签标注数据归属账号。
     assert.ok(src.includes('loadBalance, sessionAccount]'), '切换账号后应立即重拉余额')
     assert.ok(src.includes('数据账号'), '余额页签应标注数据归属账号')
+    // 模型连通检测：卡片状态点手动单测（真实 1-token 推理），点状态点不触发卡片复制。
+    assert.ok(src.includes('/model-check') && src.includes('dsh-mb-model-dot'), '模型卡应有连通检测状态点（host /model-check 路由）')
+    assert.ok(src.includes('e.stopPropagation()'), '点状态点不应触发卡片复制模型 ID')
+    assert.ok(src.includes("m.kind !== 'chat'"), '非 chat 类型模型应禁用推理测试')
     // 死代码回归防护：renderKeysTab 只允许定义一次（第二次定义曾覆盖带复制按钮的版本）。
     assert.equal((src.match(/function renderKeysTab/g) || []).length, 1, 'renderKeysTab 只允许定义一次')
     assert.ok(src.includes('复制完整值'), '密钥页签应保留「复制完整值」能力')
