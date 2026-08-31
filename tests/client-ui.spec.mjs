@@ -148,6 +148,9 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     // 密码可见性切换：图标按钮（eye/eye-off 线稿），不再用「明文/隐藏/查看」汉字文案。
     assert.ok(src.includes('const EyeIcon'), '密码可见性切换应使用 EyeIcon 线稿图标')
     assert.ok(!src.includes("? '隐藏' : '明文'") && !src.includes("? '隐藏' : '查看'"), '密码切换按钮不应再使用汉字文案')
+    // 账号切换：余额立即重拉（sessionAccount 进 effect 依赖），页签标注数据归属账号。
+    assert.ok(src.includes('loadBalance, sessionAccount]'), '切换账号后应立即重拉余额')
+    assert.ok(src.includes('数据账号'), '余额页签应标注数据归属账号')
     // 死代码回归防护：renderKeysTab 只允许定义一次（第二次定义曾覆盖带复制按钮的版本）。
     assert.equal((src.match(/function renderKeysTab/g) || []).length, 1, 'renderKeysTab 只允许定义一次')
     assert.ok(src.includes('复制完整值'), '密钥页签应保留「复制完整值」能力')
