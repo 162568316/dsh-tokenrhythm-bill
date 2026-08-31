@@ -326,6 +326,22 @@ test('normalizePlatformModels: 透传来源显示名与平台状态（online/tes
   assert.equal(list[1].platformStatus, 'testing')
 })
 
+test('normalizePlatformModels: 多上游来源合并为品牌列表（providerBrands）', () => {
+  const list = normalizePlatformModels({
+    data: [{
+      id: 'deepseek-v3', name: 'DeepSeek V3', type: 'chat', status: 'online',
+      provider: 'deepseek', providerDisplayName: 'DeepSeek',
+      providerBrands: [
+        { provider: 'deepseek', providerBrandName: 'DeepSeek' },
+        { provider: 'bailian', providerBrandName: '阿里云' },
+        { provider: 'infini', providerBrandName: '无问' },
+      ],
+      inputPrice: '4', outputPrice: '16',
+    }],
+  })
+  assert.equal(list[0].provider, 'DeepSeek / 阿里云 / 无问')
+})
+
 test('平台变更请求 CSRF 防护：统一头与 403 自愈（源码断言）', async () => {
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
