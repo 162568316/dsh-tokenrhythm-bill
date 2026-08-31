@@ -313,6 +313,19 @@ test('extractCsrfCookie: 整段 Cookie 提取 tr_csrf / 裸 session 不含则空
   assert.equal(extractCsrfCookie(''), '')
 })
 
+test('normalizePlatformModels: 透传来源显示名与平台状态（online/testing）', () => {
+  const list = normalizePlatformModels({
+    data: [
+      { id: 'glm-5.1', name: 'GLM-5.1', type: 'chat', status: 'online', provider: 'infini', providerDisplayName: '无问芯穹', inputPrice: '8', outputPrice: '28' },
+      { id: 'glm-5.3', name: 'GLM-5.3', type: 'chat', status: 'testing', provider: 'bailian', providerDisplayName: '百炼', inputPrice: '8', outputPrice: '28' },
+    ],
+  })
+  assert.equal(list[0].provider, '无问芯穹')
+  assert.equal(list[0].platformStatus, 'online')
+  assert.equal(list[1].provider, '百炼')
+  assert.equal(list[1].platformStatus, 'testing')
+})
+
 test('平台变更请求 CSRF 防护：统一头与 403 自愈（源码断言）', async () => {
   const { readFileSync } = await import('node:fs')
   const src = readFileSync(new URL('../lib/index.js', import.meta.url), 'utf8')
