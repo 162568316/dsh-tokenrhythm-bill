@@ -58,3 +58,9 @@ npm test   # node --test，解析器/归一化/掩码 14 个单测
 1. 余额仅支持基元律动；其余提供商显示「该提供商暂不支持余额查询」。
 2. 模型列表以网关实时返回为准，settings.yaml 里的静态 models 仅用于 manifest 计数，不与 `/v1/models` 合并。
 3. Key 缺失时模型页签明确显示原因（如「未读到 JY_API_KEY」），不静默空白。
+
+## 插件市场收录
+
+被 [dsh-market](https://github.com/dsh-market/dsh-market) 查询 / 安装需要进入其目录注册表
+[awesome-dsh-plugin](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin)：
+目录条目草稿与 npm 发布步骤见 [MARKET-SUBMISSION.md](MARKET-SUBMISSION.md)。

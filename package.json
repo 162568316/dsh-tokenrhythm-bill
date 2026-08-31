@@ -26,6 +26,14 @@
     "dashboard"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/162568316/dsh-tokenrhythm-bill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/162568316/dsh-tokenrhythm-bill/issues"
+  },
+  "homepage": "https://github.com/162568316/dsh-tokenrhythm-bill#readme",
   "engines": {
     "node": ">=20"
   },
