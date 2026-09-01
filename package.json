@@ -12,6 +12,7 @@
   "files": [
     "lib",
     "tests",
+    "image",
     "cordis.patch.yml",
     "LICENSE",
     "README.md"
