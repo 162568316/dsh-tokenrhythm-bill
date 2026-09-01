@@ -35,13 +35,13 @@
 
 | 条目字段 | 安装行为 |
 |----------|----------|
-| `"npm": "dsh-tokenrhythm-bill"`（✅ 0.2.0 已发布，PR 里带上） | 秒级 npm 安装，无需构建脚本 |
+| `"npm": "dsh-tokenrhythm-bill"`（✅ 0.3.0 已发布，PR 里带上） | 秒级 npm 安装，无需构建脚本 |
 | `tarball` 指向本仓库 Release 的 `.tgz` | 预构建安装（URL 必须属于本仓库，跨仓库会被拒绝） |
 | 无 `npm` / `tarball` 时 | `github:162568316/dsh-tokenrhythm-bill`，整仓下载 |
 
-npm 包 0.2.0 已发布并通过 `repository` 校验（`npm view dsh-tokenrhythm-bill repository.url` 返回本仓库）。
+npm 包 0.3.0 已发布并通过 `repository` 校验（`npm view dsh-tokenrhythm-bill repository.url` 返回本仓库）。
 
-## npm 发布清单（0.2.0 ✅ 已完成，后续版本照此流程）
+## npm 发布清单（0.3.0 ✅ 已完成，后续版本照此流程）
 
 1. `package.json` 元数据已补齐：`repository` / `bugs` / `homepage` 指向本仓库
    （目录 CI 靠 `repository` 做 npm ↔ 仓库绑定校验，即 repo-verified）；
