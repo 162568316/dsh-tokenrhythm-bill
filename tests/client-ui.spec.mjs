@@ -119,11 +119,13 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(src.includes("[data-wide=\"0\"]"), 'CSS 应定义 rail（收起）形态')
     assert.ok(src.includes('@container (max-width:60px)'), '宿主未传 wide 时应保留容器查询回退')
     assert.ok(src.includes('dsh-mb-wide-in'), 'label 重挂时应有 wide-in 淡入动画（对齐原生 newSessionLabel）')
-    // 入口与原生「设置」触发行对齐：同高 42px、图标起点 18px（左 6px 内边距补偿，
-    // 不用负 margin 出血——槽位容器 overflow-x:hidden 会裁掉出血且不产生横向滚动条），
-    // 并去掉宿主槽位 scrollbar-gutter:stable 的常驻滚动条槽。
-    assert.ok(src.includes('height:42px') && src.includes('padding:0 8px 0 6px'), '入口行几何应对齐设置触发行（内边距补偿，无出血）')
-    assert.ok(!src.includes('width:calc(100% + 4px)'), '不应使用负 margin 出血（会在槽位容器里产生横向滚动条）')
+    // 入口与原生「设置」触发行对齐：完整镜像其行几何——calc(100%+4px) 行宽 + 左右
+    // -2px 出血 + padding 0 10px 0 8px（图标起点 18px）。当前 DSH 槽位包装层是
+    // display:contents（不裁剪出血）；footerActions 是 flex 容器，须 flex:none 防止
+    // flex-shrink 收回 +4px；并去掉宿主槽位 scrollbar-gutter:stable 的常驻滚动条槽。
+    assert.ok(src.includes('height:42px') && src.includes('width:calc(100% + 4px)'), '入口行应镜像设置触发行宽度（+4px 出血）')
+    assert.ok(src.includes('margin:4px -2px 0') && src.includes('padding:0 10px 0 8px'), '入口行应镜像设置触发行的出血与内边距')
+    assert.ok(src.includes('flex:none;width:calc(100% + 4px)'), '入口行应 flex:none 防止 flex 容器收回出血宽度')
     assert.ok(src.includes('scrollbar-gutter:auto'), '应去掉宿主槽位的常驻滚动条槽')
     // 入口图标：基元律动品牌标（brand-logo.svg 图形部分紧裁 viewBox，fill:currentColor，
     // SVG 几何盒 16/18px 与原生线稿图标一致——文字字形度量会导致折叠态图标跑偏）。
