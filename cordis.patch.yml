@@ -1,8 +1,9 @@
 # dsh-tokenrhythm-bill bundle patch: inserts the dual-face plugin row into the web
 # profile roster. The node half (exports ".") runs in the host process (settings
-# parsing, credential resolution, /v1/models & usage-summary proxying), and the
-# dsh.client declaration in package.json loads the browser half (exports
-# "./client") in the web GUI (sidebar.footer.action entry + shell.overlay panel).
+# parsing, credential resolution, balance/trend/keys proxying, model connectivity
+# checks), and the dsh.client declaration in package.json loads the browser half
+# (exports "./client") in the web GUI (sidebar.footer.action entry + shell.overlay
+# panel).
 - insert:
     - id: tokenrhythm-bill
       name: 'dsh-tokenrhythm-bill'

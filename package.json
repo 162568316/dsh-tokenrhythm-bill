@@ -1,7 +1,7 @@
 {
   "name": "dsh-tokenrhythm-bill",
   "version": "0.2.0",
-  "description": "DeepSeek Harness 基元律动面板插件：模型清单、账户余额、当日用量与平台密钥管理",
+  "description": "DeepSeek Harness 基元律动费用中心插件：模型清单与连通检测、账户余额、用量趋势与平台密钥管理",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -23,7 +23,9 @@
     "dsh-plugin",
     "models",
     "balance",
+    "usage",
     "tokenrhythm",
+    "connectivity",
     "dashboard"
   ],
   "license": "MIT",

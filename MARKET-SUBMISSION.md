@@ -21,8 +21,8 @@
   "url": "https://github.com/162568316/dsh-tokenrhythm-bill",
   "category": ["usage", "model"],
   "description": {
-    "en": "Tokenrhythm model / balance / usage dashboard: a sidebar footer entry opens a draggable panel whose Models tab filters the gateway model list by category (text / image / audio / video / embedding) showing name, context window, input / output / cache pricing, discount and image pricing with capability badges; the Balance tab shows the remaining limited-time quota with expiry and today's usage aggregated from call logs, auto-refreshing every 60 s. Balance queries work via platform account login or a pasted tr_session cookie; API keys and cookies stay host-side and are only ever masked in the browser.",
-    "zh": "基元律动模型 / 余额 / 用量面板：侧栏底部「¥ 模型 / 余额」入口打开可拖拽面板。模型页签按分类（文本 / 图像 / 音频 / 视频 / 向量）筛选网关模型列表，展示显示名、上下文、输入 / 输出 / 缓存单价、折扣价、图片单价与能力徽标；余额页签展示剩余限时额度与到期时间，并按本地 0 点起聚合的调用日志统计当日用量，每 60 秒自动刷新。支持平台账号登录或粘贴 tr_session 会话 Cookie 查询余额；API Key 与 Cookie 只存 host 进程内存与本地状态文件，浏览器侧仅显示掩码。"
+    "en": "Tokenrhythm (基元律动) finance dashboard for DeepSeek Harness: a sidebar entry with the brand mark opens a draggable panel. The Models tab filters the gateway model list by category (text / image / audio / video / embedding) and shows model ID, upstream source, platform status (online / testing), context window, supported modalities, input / output / cache pricing with discounted prices and per-image price; a per-card connectivity dot runs a real 1-token inference check (60 s cache, ~¥0.0004). The Balance tab shows the account balance, expiring quota with countdown and share bar, frozen amount, today's usage aggregated from call logs and a 7-day cost chart with per-model hover details, auto-refreshing every 60 s, with per-account data isolation. The Keys tab lists / creates platform API keys (masked). Balance queries work via platform account login or a pasted tr_session cookie; credentials stay host-side and the browser only ever sees masks.",
+    "zh": "基元律动费用中心：DSH 侧栏品牌标入口打开可拖拽面板。模型页签按分类（文本 / 图像 / 音频 / 视频 / 向量）筛选网关模型，卡片展示模型 ID、上游来源、平台状态（在线 / 测试中）、上下文、支持模态、输入 / 输出 / 缓存单价（含折扣价）与图片单价，右上角连通状态点可做真实 1-token 推理检测（60 秒缓存，约 ¥0.0004）；余额页签展示账户余额、限时额度倒计时与占比、冻结金额，按本地 0 点起聚合的调用日志统计当日用量，并附近 7 天花费柱状图（悬停看各模型明细），每 60 秒自动刷新，数据按账号隔离；密钥页签查看 / 新建平台 API Key（只显掩码）。支持平台账号登录或粘贴 tr_session 会话 Cookie 查询余额；凭据只存本机 host 进程，浏览器侧仅显示掩码。"
   },
   "install": "dsh plugin --profile web add dsh-tokenrhythm-bill",
   "npm": "dsh-tokenrhythm-bill"
@@ -35,21 +35,21 @@
 
 | 条目字段 | 安装行为 |
 |----------|----------|
-| `"npm": "dsh-tokenrhythm-bill"`（✅ 0.1.0 已发布，PR 里带上） | 秒级 npm 安装，无需构建脚本 |
+| `"npm": "dsh-tokenrhythm-bill"`（✅ 0.2.0 已发布，PR 里带上） | 秒级 npm 安装，无需构建脚本 |
 | `tarball` 指向本仓库 Release 的 `.tgz` | 预构建安装（URL 必须属于本仓库，跨仓库会被拒绝） |
 | 无 `npm` / `tarball` 时 | `github:162568316/dsh-tokenrhythm-bill`，整仓下载 |
 
-npm 包 0.1.0 已发布并通过 `repository` 校验（`npm view dsh-tokenrhythm-bill repository.url` 返回本仓库）。
+npm 包 0.2.0 已发布并通过 `repository` 校验（`npm view dsh-tokenrhythm-bill repository.url` 返回本仓库）。
 
-## npm 发布清单（0.1.0 ✅ 已完成，后续版本照此流程）
+## npm 发布清单（0.2.0 ✅ 已完成，后续版本照此流程）
 
 1. `package.json` 元数据已补齐：`repository` / `bugs` / `homepage` 指向本仓库
    （目录 CI 靠 `repository` 做 npm ↔ 仓库绑定校验，即 repo-verified）；
 2. `npm login`；
-3. `npm publish` —— `files` 字段已限定只发布 `lib`、`tests`、
-   `cordis.patch.yml`、`LICENSE`、`README.md`；
+3. `npm publish` —— `files` 字段已限定只发布 `lib`、`tests`、`image`、
+   `cordis.patch.yml`、`LICENSE`、`README.md`（含界面截图）；
 4. 验证：`npm view dsh-tokenrhythm-bill repository` 应返回本仓库；
-5. （可选）打 `git tag v0.1.0` 并创建 GitHub Release、附构建 `.tgz`，
+5. （可选）打 `git tag v0.2.0` 并创建 GitHub Release、附构建 `.tgz`，
    可同时启用 tarball 快速路线；
 6. （可选）往仓库加 `assets/` 截图并把 raw URL 填进条目 `screenshots`
    数组 —— 市场卡片会直接展示作者截图，未提供时回落到 README 自动抽取。
