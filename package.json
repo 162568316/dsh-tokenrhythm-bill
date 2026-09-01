@@ -1,6 +1,6 @@
 {
   "name": "dsh-tokenrhythm-bill",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "DeepSeek Harness 基元律动费用中心插件：模型清单与连通检测、账户余额、用量趋势与平台密钥管理",
   "type": "module",
   "main": "lib/index.js",
