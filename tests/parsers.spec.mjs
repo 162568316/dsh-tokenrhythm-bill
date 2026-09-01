@@ -7,6 +7,7 @@ import {
   normalizePlatformModels,
   categoryCounts,
   normalizeBalance,
+  accountNameFromMe,
   summarizeDailyLogs,
   maskSecret,
   extractSessionCookie,
@@ -229,6 +230,19 @@ test('normalizeBalance: 信封 + snake_case + me 账户名', () => {
   assert.equal(b.costCny, 66.6)
   assert.equal(b.account, '李四')
   assert.equal(typeof b.fetchedAt, 'number')
+})
+
+test('accountNameFromMe: 信封 / 字段优先级 / 脏数据', () => {
+  assert.equal(accountNameFromMe({ data: { name: 'alice' } }), 'alice')
+  assert.equal(accountNameFromMe({ name: 'a', nickname: 'b', username: 'c', email: 'd', id: 5 }), 'a')
+  assert.equal(accountNameFromMe({ nickname: '昵称', username: 'u1' }), '昵称')
+  assert.equal(accountNameFromMe({ username: 'u1', email: 'e@x.com' }), 'u1')
+  assert.equal(accountNameFromMe({ email: 'e@x.com', id: 5 }), 'e@x.com')
+  assert.equal(accountNameFromMe({ id: 12345 }), '12345')
+  assert.equal(accountNameFromMe(null), '')
+  assert.equal(accountNameFromMe('garbage'), '')
+  assert.equal(accountNameFromMe({ data: {} }), '')
+  assert.equal(accountNameFromMe({ data: { name: '   ' } }), '')
 })
 
 test('normalizeBalance: 限时额度 / 冻结 / 到期时间 / 调用统计', () => {
