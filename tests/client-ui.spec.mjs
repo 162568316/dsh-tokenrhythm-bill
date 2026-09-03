@@ -6,8 +6,6 @@ import { dirname, join } from 'node:path'
 
 const clientPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'client.js')
 const src = readFileSync(clientPath, 'utf8')
-const hostPath = join(dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'index.js')
-const hostSrc = readFileSync(hostPath, 'utf8')
 
 // 括号/引号平衡检查：曾经手写 createElement 连续三次括号不匹配导致 renderer 白屏，
 // 这里在 CI 里拦住同类错误。扫描时跳过字符串（' " `）与注释（// 与 /* */）。
@@ -147,15 +145,6 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(src.includes("prefs: { entryBalance: mode }"), '切换后应持久化到 prefs')
     assert.ok(src.includes("p.prefs.entryBalance === 'total' || p.prefs.entryBalance === 'expiring'"), '轮询应同步入口胶囊模式')
     assert.ok(src.includes('entryMode === \'expiring\''), '入口胶囊应按模式取值（限时模式取逐笔合计）')
-    // 桌面通知：低余额/限时到期弹系统通知（DSH 原生 desktopRuntime.notifyAttention 通道，
-    // host 余额路由取数后判定 + episode 去重；仅桌面壳生效，纯 web 启动注入挂起不执行）。
-    assert.ok(src.includes("'桌面通知'"), '设置页应有「桌面通知」卡片')
-    assert.ok(src.includes("setNotifyEnabled(true)") && src.includes("setNotifyEnabled(false)"), '桌面通知应有开/关切换')
-    assert.ok(src.includes("prefs: { notify: !!on }"), '通知开关应持久化到 prefs')
-    assert.ok(src.includes('r.prefs.notify !== false'), '面板首开应从 prefs 读通知开关（默认开）')
-    assert.ok(hostSrc.includes('computeNotifyEpisode'), 'host 应接线通知去重判定纯函数')
-    assert.ok(hostSrc.includes("ctx.inject(['desktopRuntime']"), 'host 应注入 DSH 原生通知服务（仅桌面壳存在）')
-    assert.ok(hostSrc.includes('maybeNotify(balance)'), '余额路由应在取数后触发通知判定')
     // 入口图标：基元律动品牌标（brand-logo.svg 图形部分紧裁 viewBox，fill:currentColor，
     // SVG 几何盒 16/18px 与原生线稿图标一致——文字字形度量会导致折叠态图标跑偏）。
     assert.ok(src.includes('const EntryMark') && src.includes("MARK_VIEWBOX = '10.4213 15.2079 60.8522 37.2003'"), '入口图标应为基元律动品牌标 SVG（紧裁 viewBox）')

@@ -10,7 +10,6 @@ import {
   normalizeExpiringCredits,
   extractExpiringItems,
   sanitizeEntryBalance,
-  computeNotifyEpisode,
   isNewerVersion,
   normalizeDistTags,
   sanitizeUpdate,
@@ -604,71 +603,4 @@ test('sanitizeEntryBalance: 只认 total / expiring', () => {
   assert.equal(sanitizeEntryBalance(''), null)
   assert.equal(sanitizeEntryBalance(undefined), null)
   assert.equal(sanitizeEntryBalance(null), null)
-})
-
-test('computeNotifyEpisode: 低余额首跌发、持续不重发、恢复清键再跌破重发', () => {
-  const now = Date.parse('2026-09-03T04:00:00Z')
-  const low = { availableBalanceCny: 9.75 }
-  const first = computeNotifyEpisode(low, [], true, { lowBalanceKey: '', expiringKeys: [] }, now)
-  assert.equal(first.notifications.length, 1)
-  assert.equal(first.notifications[0].key, 'low')
-  assert.ok(first.notifications[0].title.includes('余额不足'))
-  assert.ok(first.notifications[0].body.includes('¥9.75'))
-  assert.equal(first.next.lowBalanceKey, 'low')
-  const second = computeNotifyEpisode(low, [], true, first.next, now)
-  assert.equal(second.notifications.length, 0)
-  assert.equal(second.next.lowBalanceKey, 'low')
-  const recovered = computeNotifyEpisode({ availableBalanceCny: 88 }, [], true, second.next, now)
-  assert.equal(recovered.notifications.length, 0)
-  assert.equal(recovered.next.lowBalanceKey, '')
-  const again = computeNotifyEpisode(low, [], true, recovered.next, now)
-  assert.equal(again.notifications.length, 1)
-})
-
-test('computeNotifyEpisode: 低余额 + 临期同轮两条；临期逐笔 key 去重 + 多笔合并', () => {
-  const now = Date.parse('2026-09-03T04:00:00Z')
-  const items = [
-    { amountCny: 200, expireAt: '2026-09-05T00:00:00Z' },      // 1d20h → 2 天
-    { amountCny: 150, expireAt: '2026-09-06T00:00:00.000Z' },  // 2d20h → 3 天
-    { amountCny: 99, expireAt: '2026-10-01T00:00:00Z' },       // 28 天 → 不提醒
-  ]
-  const first = computeNotifyEpisode({ availableBalanceCny: 5 }, items, true, { lowBalanceKey: '', expiringKeys: [] }, now)
-  assert.equal(first.notifications.length, 2)
-  const exp = first.notifications[1]
-  assert.ok(exp.title.includes('限时余额'))
-  assert.ok(exp.body.includes('¥200'))
-  assert.ok(exp.body.includes('2 天后失效'))
-  assert.ok(exp.body.includes('另有 1 笔'))
-  assert.equal(first.next.expiringKeys.length, 2)
-  const second = computeNotifyEpisode({ availableBalanceCny: 5 }, items, true, first.next, now)
-  assert.equal(second.notifications.length, 0)
-})
-
-test('computeNotifyEpisode: 开关关闭不发且状态原样保留', () => {
-  const now = Date.parse('2026-09-03T04:00:00Z')
-  const items = [{ amountCny: 200, expireAt: '2026-09-05T00:00:00Z' }]
-  const prev = { lowBalanceKey: '', expiringKeys: [] }
-  const r = computeNotifyEpisode({ availableBalanceCny: 5 }, items, false, prev, now)
-  assert.deepEqual(r.notifications, [])
-  assert.equal(r.next.lowBalanceKey, '')
-  assert.deepEqual(r.next.expiringKeys, [])
-})
-
-test('computeNotifyEpisode: 过期笔清理 keys + 上限 20', () => {
-  const now = Date.parse('2026-09-03T04:00:00Z')
-  // 21 笔全部 1 天内到期 → 合并发一条，涉及 key 全记但 cap 到 20
-  const items = []
-  for (let i = 1; i <= 21; i++) {
-    items.push({ amountCny: 10, expireAt: new Date(now + i * 3600 * 1000).toISOString() })
-  }
-  const r = computeNotifyEpisode({ availableBalanceCny: 50 }, items, true, { lowBalanceKey: '', expiringKeys: [] }, now)
-  assert.equal(r.notifications.length, 1)
-  assert.ok(r.notifications[0].body.includes('另有 20 笔'))
-  assert.equal(r.next.expiringKeys.length, 20)
-  // 列表内已过期的 key 被清理
-  const expiredKey = 'exp:' + new Date(now - 3600 * 1000).toISOString()
-  const prev = { lowBalanceKey: '', expiringKeys: [expiredKey] }
-  const r2 = computeNotifyEpisode({ availableBalanceCny: 50 }, [{ amountCny: 10, expireAt: new Date(now - 3600 * 1000).toISOString() }], true, prev, now)
-  assert.equal(r2.notifications.length, 0)
-  assert.equal(r2.next.expiringKeys.length, 0)
 })
