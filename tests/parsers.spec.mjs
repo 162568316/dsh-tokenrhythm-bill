@@ -7,6 +7,13 @@ import {
   normalizePlatformModels,
   categoryCounts,
   normalizeBalance,
+  normalizeExpiringCredits,
+  extractExpiringItems,
+  sanitizeEntryBalance,
+  isNewerVersion,
+  normalizeDistTags,
+  sanitizeUpdate,
+  detectInstallMode,
   accountNameFromMe,
   summarizeDailyLogs,
   maskSecret,
@@ -306,6 +313,99 @@ test('normalizeBalance: 字段缺失记 null 不抛错', () => {
   assert.equal(b.account, '')
 })
 
+test('extractExpiringItems: 候选键直取 + 按到期时间升序 + 名称可选', () => {
+  const items = extractExpiringItems({ data: { expiringItems: [
+    { amountCny: 119.3, expireAt: '2026-09-28T00:00:00.000Z' },
+    { amountCny: 200, expireAt: '2026-09-04T00:00:00.000Z', name: '新人礼' },
+    { amountCny: 150, expireAt: '2026-09-15T00:00:00.000Z' },
+  ] } })
+  assert.equal(items.length, 3)
+  assert.equal(Date.parse(items[0].expireAt) < Date.parse(items[1].expireAt), true)
+  assert.equal(items[0].amountCny, 200)
+  assert.equal(items[0].name, '新人礼')
+})
+
+test('extractExpiringItems: snake_case 候选键 + 信封 + 字符串金额', () => {
+  const items = extractExpiringItems({ data: { expiring_list: [
+    { amount_cny: '88.5', expire_at: '2026-09-10T00:00:00Z' },
+  ] } })
+  assert.equal(items.length, 1)
+  assert.equal(items[0].amountCny, 88.5)
+  assert.equal(items[0].expireAt, '2026-09-10T00:00:00.000Z')
+})
+
+test('extractExpiringItems: 深度扫描兜底（未知键名）', () => {
+  const items = extractExpiringItems({ data: { whatever: { rows: [
+    { quota: 30, deadline: '2026-12-01T00:00:00Z', title: '活动赠送' },
+    { quota: 10, deadline: '2026-12-20T00:00:00Z' },
+    { note: '不是钱', expireAt: '2026-12-22' },
+    { amount: 5 },
+  ] } } })
+  assert.equal(items.length, 2)
+  assert.equal(items[0].amountCny, 30)
+  assert.equal(items[0].name, '活动赠送')
+  assert.equal(Date.parse(items[0].expireAt) < Date.parse(items[1].expireAt), true)
+})
+
+test('extractExpiringItems: 缺失/空/脏数据 → []', () => {
+  assert.deepEqual(extractExpiringItems(null), [])
+  assert.deepEqual(extractExpiringItems({}), [])
+  assert.deepEqual(extractExpiringItems({ data: { expiringItems: [] } }), [])
+  assert.deepEqual(extractExpiringItems({ data: { expiringItems: [{ amount: 'x' }] } }), [])
+  assert.deepEqual(extractExpiringItems({ data: { expiringItems: 'nope' } }), [])
+})
+
+test('normalizeExpiringCredits: 平台实测形态 → 剩余额升序 + sourceLabel 作名', () => {
+  const items = normalizeExpiringCredits({ code: 0, data: {
+    summary: { expiringBalanceCny: '147.99603126', nextExpiryAt: '2026-09-14T17:21:02.054Z' },
+    list: [
+      { id: 'b', source: 'REFERRAL_INVITER_REWARD', sourceLabel: '邀请奖励', grantedCny: '68.00000000', remainingCny: '68.00000000', grantedAt: '2026-08-26T07:46:03.210Z', expiresAt: '2026-09-26T07:46:03.210Z' },
+      { id: 'a', source: 'REFERRAL_INVITER_REWARD', sourceLabel: '邀请奖励', grantedCny: '68.00000000', remainingCny: '11.99603126', grantedAt: '2026-08-14T17:21:02.054Z', expiresAt: '2026-09-14T17:21:02.054Z' },
+    ],
+    total: 2, page: 1, pageSize: 20,
+  } })
+  assert.equal(items.length, 2)
+  assert.equal(Date.parse(items[0].expireAt) < Date.parse(items[1].expireAt), true, '应按到期时间升序')
+  assert.equal(items[0].amountCny, 11.99603126, '金额应取剩余额 remainingCny')
+  assert.equal(items[0].name, '邀请奖励')
+})
+
+test('normalizeExpiringCredits: 剩余 0 丢弃 / 坏数据丢弃 / 不可用返回 null', () => {
+  const items = normalizeExpiringCredits({ data: { list: [
+    { sourceLabel: 'x', remainingCny: '0.00000000', expiresAt: '2026-09-14T00:00:00Z' },
+    { sourceLabel: 'y', remainingCny: '5', expiresAt: '垃圾时间' },
+    { sourceLabel: 'z', remainingCny: '8', expiresAt: '2026-10-01T00:00:00Z' },
+    'junk',
+  ] } })
+  assert.equal(items.length, 1)
+  assert.equal(items[0].amountCny, 8)
+  assert.equal(normalizeExpiringCredits(null), null, '不可用 → null（调用方回退深扫）')
+  assert.equal(normalizeExpiringCredits({}), null)
+  assert.equal(normalizeExpiringCredits({ data: { nope: true } }), null)
+})
+
+test('normalizeBalance: expiringJson 为权威，失败回退 usage-summary 深扫', () => {
+  const summary = { data: { expiringItems: [{ amountCny: 5, expireAt: '2026-09-04T00:00:00Z' }] } }
+  const credits = { data: { list: [
+    { sourceLabel: '邀请奖励', remainingCny: '11.99603126', expiresAt: '2026-09-14T17:21:02.054Z' },
+  ] } }
+  const fromCredits = normalizeBalance(summary, null, credits)
+  assert.equal(fromCredits.expiringItems.length, 1)
+  assert.equal(fromCredits.expiringItems[0].amountCny, 11.99603126)
+  const fallback = normalizeBalance(summary, null, null)
+  assert.equal(fallback.expiringItems[0].amountCny, 5)
+  const empty = normalizeBalance({}, null)
+  assert.deepEqual(empty.expiringItems, [])
+})
+
+test('normalizeBalance: 附带 expiringItems 字段', () => {
+  const b = normalizeBalance({ data: { balanceCny: 10, expiringItems: [{ amountCny: 5, expireAt: '2026-09-04T00:00:00Z' }] } }, null)
+  assert.equal(b.expiringItems.length, 1)
+  assert.equal(b.expiringItems[0].amountCny, 5)
+  const empty = normalizeBalance({}, null)
+  assert.deepEqual(empty.expiringItems, [])
+})
+
 test('maskSecret: 前 5 位…(长度)', () => {
   assert.equal(maskSecret('sk_tr_r-g3-PLwrnWWshZVaKLrdgaEYx-pmpwptlREPCAM6-w'), 'sk_tr…(49)')
   assert.equal(maskSecret(''), '')
@@ -457,4 +557,50 @@ test('normalizePlatformKeys / sanitizeAccounts: 平台密钥与账号列表', as
   assert.equal(accs[0].password, 'p1')
   assert.equal(accs[1].account, 'B')
   assert.deepEqual(sanitizeAccounts(null), [])
+})
+
+// ---- 更新检测纯函数 ----
+
+test('isNewerVersion: 三元逐段比较，忽略 prerelease，脏输入 false', () => {
+  assert.equal(isNewerVersion('0.3.2', '0.4.0'), true)
+  assert.equal(isNewerVersion('0.4.0', '0.3.2'), false)
+  assert.equal(isNewerVersion('0.3.2', '0.3.2'), false)
+  assert.equal(isNewerVersion('0.3.2', '0.3.10'), true, '逐段数值比较，不是字符串比较')
+  assert.equal(isNewerVersion('0.3.2', '1.0.0'), true)
+  assert.equal(isNewerVersion('0.3.2', '0.4.0-beta.1'), true, 'prerelease 后缀被忽略')
+  assert.equal(isNewerVersion('v0.3.2', 'v0.4.0'), true, '容忍 v 前缀')
+  assert.equal(isNewerVersion('0.3.2', '0.4'), false, '缺 patch 位不解析')
+  assert.equal(isNewerVersion('', '0.4.0'), false)
+  assert.equal(isNewerVersion('x.y.z', '0.4.0'), false)
+  assert.equal(isNewerVersion(null, null), false)
+})
+
+test('normalizeDistTags: 裸 tags / dist-tags 信封 / 脏数据', () => {
+  assert.equal(normalizeDistTags({ latest: '0.4.0' }), '0.4.0')
+  assert.equal(normalizeDistTags({ 'dist-tags': { latest: '1.2.3' } }), '1.2.3')
+  assert.equal(normalizeDistTags({}), null)
+  assert.equal(normalizeDistTags({ latest: 'not-a-version' }), null)
+  assert.equal(normalizeDistTags(null), null)
+})
+
+test('sanitizeUpdate: 只留合法字段，版本串必须可解析', () => {
+  const clean = sanitizeUpdate({ latestVersion: '0.4.0', checkedAt: 1700000000000, currentAtCheck: '0.3.2', ignoredVersion: '0.4.0', junk: 'x' })
+  assert.deepEqual(clean, { latestVersion: '0.4.0', checkedAt: 1700000000000, currentAtCheck: '0.3.2', ignoredVersion: '0.4.0' })
+  assert.deepEqual(sanitizeUpdate({ latestVersion: 'garbage', checkedAt: -5, currentAtCheck: '0.4' }), {})
+  assert.deepEqual(sanitizeUpdate(null), {})
+  assert.deepEqual(sanitizeUpdate('nope'), {})
+})
+
+test('detectInstallMode: 默认 npm / 显式 home 无链接时 npm', () => {
+  assert.equal(detectInstallMode('C:\nonexistent-dsh-home-for-test'), 'npm')
+  assert.equal(typeof detectInstallMode(), 'string')
+})
+
+test('sanitizeEntryBalance: 只认 total / expiring', () => {
+  assert.equal(sanitizeEntryBalance('total'), 'total')
+  assert.equal(sanitizeEntryBalance('expiring'), 'expiring')
+  assert.equal(sanitizeEntryBalance('bogus'), null)
+  assert.equal(sanitizeEntryBalance(''), null)
+  assert.equal(sanitizeEntryBalance(undefined), null)
+  assert.equal(sanitizeEntryBalance(null), null)
 })

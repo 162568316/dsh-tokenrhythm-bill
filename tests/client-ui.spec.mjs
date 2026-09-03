@@ -127,6 +127,24 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(src.includes('margin:4px -2px 0') && src.includes('padding:0 10px 0 8px'), '入口行应镜像设置触发行的出血与内边距')
     assert.ok(src.includes('flex:none;width:calc(100% + 4px)'), '入口行应 flex:none 防止 flex 容器收回出血宽度')
     assert.ok(src.includes('scrollbar-gutter:auto'), '应去掉宿主槽位的常驻滚动条槽')
+    // 限时余额悬浮卡：逐笔（金额 + N 天后失效），无限时数据不渲染、限时为 0 不显示弹窗
+    // （用户定稿：不显示总余额、不显示具体日期、无 caption、空数据悬停无反应）。
+    assert.ok(src.includes('ExpiringHoverCard'), '入口应有限时余额悬浮卡组件')
+    assert.ok(src.includes('expDaysLeft'), '悬浮卡应实时计算剩余天数')
+    assert.ok(src.includes("'⏳ 限时余额'"), '悬浮卡头部应为限时余额文案（无总余额）')
+    assert.ok(src.includes("'今天失效'") && src.includes("' 天后失效'"), '悬浮卡应展示 N 天后失效（含今天失效）')
+    assert.ok(src.includes('HOV_SHOW_DELAY_MS') && src.includes('HOV_HIDE_DELAY_MS'), '悬浮卡应有 hover 显示/收起延时')
+    assert.ok(src.includes('hovCapable = hovItems.length > 0 && !s.open'), '无限时数据或面板打开时不显示悬浮卡')
+    assert.ok(src.includes('expiringItems: Array.isArray('), '余额响应应把 expiringItems 写入 store')
+    // 入口胶囊余额二选一（设置页，插件更新上方）：总余额 / 限时总余额，点击切换
+    // 并持久化 prefs；轮询同步模式，面板从未打开入口胶囊也能按设置显示。
+    assert.ok(src.includes("'入口胶囊余额'"), '设置页应有「入口胶囊余额」卡片')
+    assert.ok(src.includes("'总余额'") && src.includes("'限时总余额'"), '入口胶囊余额应有两个选项')
+    assert.ok(src.includes("setEntryBalance('total')") && src.includes("setEntryBalance('expiring')"), '两个选项点击应调 setEntryBalance 切换')
+    assert.ok(src.includes('entryBalMode:'), 'store 应有入口胶囊模式字段')
+    assert.ok(src.includes("prefs: { entryBalance: mode }"), '切换后应持久化到 prefs')
+    assert.ok(src.includes("p.prefs.entryBalance === 'total' || p.prefs.entryBalance === 'expiring'"), '轮询应同步入口胶囊模式')
+    assert.ok(src.includes('entryMode === \'expiring\''), '入口胶囊应按模式取值（限时模式取逐笔合计）')
     // 入口图标：基元律动品牌标（brand-logo.svg 图形部分紧裁 viewBox，fill:currentColor，
     // SVG 几何盒 16/18px 与原生线稿图标一致——文字字形度量会导致折叠态图标跑偏）。
     assert.ok(src.includes('const EntryMark') && src.includes("MARK_VIEWBOX = '10.4213 15.2079 60.8522 37.2003'"), '入口图标应为基元律动品牌标 SVG（紧裁 viewBox）')
@@ -134,6 +152,16 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(!src.includes("'¥',"), '入口不应再用 ¥ 文字字形')
     // 设置页备用粘贴：默认折叠。
     assert.ok(src.includes('useState(false) // 默认折叠'), '备用粘贴区应默认折叠')
+    // 设置页插件更新卡片：npm dist-tags 比对，只提醒 + 复制命令，不自动执行。
+    assert.ok(src.includes("React.createElement('div', { className: 'dsh-mb-set-title' }, '插件更新')"), '设置页应有插件更新卡片')
+    assert.ok(src.includes("jsonGet(API + '/update'"), '进入设置页应拉取 /update（host 24h TTL）')
+    assert.ok(src.includes("loadUpdate(true)"), '「检查更新」按钮应带 force=1 绕过缓存')
+    assert.ok(src.includes("copyText('dsh plugin add dsh-tokenrhythm-bill')"), '复制更新命令应为 dsh plugin add（不自动执行）')
+    assert.ok(src.includes("jsonPost(API + '/update/ignore'"), '忽略此版本应调 /update/ignore')
+    assert.ok(src.includes("'本地开发模式'"), 'local 安装模式应显示本地开发模式标识')
+    assert.ok(src.includes("'已是最新版本'") && src.includes("'有新版本 v'"), '状态行应区分最新/有新版本')
+    assert.ok(src.includes("'已忽略 v'"), '被忽略的版本应有独立文案')
+    assert.ok(src.includes('.dsh-mb-upd-state.new'), '有新版本时状态行应有强调色')
     // 加载骨架屏：三页签的加载占位与真实内容同构（shimmer 微光扫过，尊重系统减动效）。
     assert.ok(src.includes('dsh-mb-skel-cards') && src.includes('dsh-mb-skel-hero') && src.includes('dsh-mb-skel-rows'), '模型/余额/密钥页签应有同构骨架屏占位')
     assert.ok(src.includes('@keyframes dsh-mb-shimmer') && src.includes('prefers-reduced-motion:reduce'), '骨架屏应有 shimmer 动效并尊重系统减动效设置')
