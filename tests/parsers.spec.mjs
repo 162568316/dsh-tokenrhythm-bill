@@ -5,6 +5,7 @@ import {
   extractCredentialFromText,
   normalizeModels,
   normalizePlatformModels,
+  normalizeStatus,
   categoryCounts,
   normalizeBalance,
   normalizeExpiringCredits,
@@ -603,4 +604,145 @@ test('sanitizeEntryBalance: 只认 total / expiring', () => {
   assert.equal(sanitizeEntryBalance(''), null)
   assert.equal(sanitizeEntryBalance(undefined), null)
   assert.equal(sanitizeEntryBalance(null), null)
+})
+
+// ---- normalizeStatus：status.moonlink.top 90d 聚合 → 面板轻量结构 ----
+// 夹具形态照抄真实响应：latest.models 是 {id: item}；incidents 是 {events: [...]}
+// （90d 档实测形态）；days 三天、'@api' 无逐日记录。
+const ST_RAW = {
+  latest: {
+    checked_at: 1788484594,
+    overall: 'partial_outage',
+    model_count: 3,
+    models: {
+      '@api': { model: '@api', status: 'up', http: 200, ttfb: 525, error: null },
+      'glm-5.3-flash': { model: 'glm-5.3-flash', status: 'up', http: 200, ttfb: 8167, error: null },
+      'qwen3.7-max': { model: 'qwen3.7-max', status: 'down', http: 503, ttfb: 1240, error: 'HTTP 503: API Key 鉴权服务暂时不可用' },
+    },
+  },
+  history: {
+    days: {
+      '2026-09-01': { 'glm-5.3-flash': { ok: 286, t: 288 }, 'qwen3.7-max': { ok: 100, t: 100 } },
+      '2026-09-02': { 'glm-5.3-flash': { ok: 288, t: 288 }, 'qwen3.7-max': { ok: 90, t: 100 } },
+      '2026-09-03': { 'glm-5.3-flash': { ok: 280, t: 288 }, 'qwen3.7-max': { ok: 80, t: 100 } },
+    },
+  },
+  catalog: {
+    models: {
+      'glm-5.3-flash': { context_length: 132000, input_price: 0.5, output_price: 2 },
+      'qwen3.7-max': { context_length: 262144, input_price: 2, output_price: 8 },
+    },
+  },
+  incidents: {
+    events: [
+      { title: 'qwen3.7-max 服务中断', detail: 'HTTP 503', started_at: 100, resolved_at: 200 },
+      { title: 'glm-5.3 服务中断', detail: '', started_at: 300, resolved_at: 0 },
+    ],
+  },
+}
+
+test('normalizeStatus: 可用率聚合 / 事故排序 / 汇总指标', () => {
+  const d = normalizeStatus(ST_RAW)
+  assert.ok(d)
+  assert.equal(d.overall, 'partial_outage')
+  assert.equal(d.checkedAt, 1788484594)
+  assert.equal(d.modelCount, 3)
+  assert.equal(d.upCount, 2)
+  assert.equal(d.historyDays, 3)
+  const glm = d.models.find((m) => m.id === 'glm-5.3-flash')
+  const qwen = d.models.find((m) => m.id === 'qwen3.7-max')
+  const api = d.models.find((m) => m.id === '@api')
+  assert.ok(glm && qwen && api)
+  // a24 = 今天（days 最大 key 2026-09-03）逐模型成功率，%保留 1 位
+  assert.equal(glm.a24, Math.round((280 / 288) * 1000) / 10)
+  assert.equal(qwen.a24, 80)
+  assert.equal(qwen.status, 'down')
+  assert.equal(qwen.http, 503)
+  // a7 / a90：夹具只有 3 天 → 两个窗口相同（全量）
+  const glmAll = Math.round(((286 + 288 + 280) / (288 + 288 + 288)) * 1000) / 10
+  assert.equal(glm.a7, glmAll)
+  assert.equal(glm.a90, glmAll)
+  // '@api' 无逐日记录 → 三个窗口都 null
+  assert.equal(api.a24, null)
+  assert.equal(api.a7, null)
+  assert.equal(api.a90, null)
+  // 逐模型逐日（千分比整数、对齐 days 键序；'@api' 全 null）+ meta 文案（ctx · ¥in/out）
+  assert.deepEqual(d.days, ['2026-09-01', '2026-09-02', '2026-09-03'])
+  assert.deepEqual(d.modelDaily['glm-5.3-flash'], [993, 1000, 972])
+  assert.deepEqual(d.modelDaily['qwen3.7-max'], [1000, 900, 800])
+  assert.deepEqual(d.modelDaily['@api'], [null, null, null])
+  assert.equal(d.meta['glm-5.3-flash'], '132K · ¥0.5/2')
+  assert.equal(d.meta['qwen3.7-max'], '262.144K · ¥2/8')
+  assert.equal(d.meta['@api'], undefined)
+  // daily 全通道合并：第一天 (286+100)/(288+100)=99.48
+  assert.equal(d.daily.length, 3)
+  assert.equal(d.daily[0].d, '2026-09-01')
+  assert.equal(d.daily[0].v, Math.round((386 / 388) * 10000) / 100)
+  // todayAvail = 今天全通道合并 (280+80)/(288+100)
+  assert.equal(d.todayAvail, Math.round((360 / 388) * 10000) / 100)
+  // avgTtfb 只统计 up 通道（@api 525 + glm 8167；down 的 qwen 不计）
+  assert.equal(d.avgTtfb, Math.round((525 + 8167) / 2))
+  // incidents：{events:[…]} 实测形态 → 数组、started_at 降序、resolved_at=0 视为未解决
+  assert.equal(d.incidents.length, 2)
+  assert.equal(d.incidents[0].title, 'glm-5.3 服务中断')
+  assert.equal(d.incidents[0].resolvedAt, 0)
+  assert.equal(d.incidents[1].resolvedAt, 200)
+  assert.equal(d.unresolvedCount, 1)
+})
+
+test('normalizeStatus: 裸数组 / 平铺对象 incidents / 未知状态归 down / 坏输入 → null', () => {
+  const arr = normalizeStatus({
+    ...ST_RAW,
+    incidents: [
+      { title: 'x 服务中断', detail: 'timeout', started_at: 5, resolved_at: 6 },
+      { title: 'y 服务中断', started_at: 9 },
+    ],
+  })
+  assert.equal(arr.incidents.length, 2)
+  assert.equal(arr.incidents[0].title, 'y 服务中断', '无 resolved_at 视为未解决且按 started_at 降序')
+  assert.equal(arr.unresolvedCount, 1)
+  // 平铺 {id: item} 形态（防御）
+  const flat = normalizeStatus({
+    ...ST_RAW,
+    incidents: { k1: { title: 'f 服务中断', started_at: 7, resolved_at: 8 } },
+  })
+  assert.equal(flat.incidents.length, 1)
+  assert.equal(flat.incidents[0].title, 'f 服务中断')
+  // status 未知值 → down（白名单外兜底）
+  const bad = normalizeStatus({ latest: { checked_at: 1, overall: 'weird', models: { m: { model: 'm', status: '???' } } } })
+  assert.equal(bad.models[0].status, 'down')
+  assert.equal(bad.overall, 'weird', 'overall 原样透传，映射交给前端')
+  // 无 days → 窗口可用率全 null、daily 空
+  assert.equal(bad.daily.length, 0)
+  assert.equal(bad.todayAvail, null)
+  // 不可解析入参
+  assert.equal(normalizeStatus(null), null)
+  assert.equal(normalizeStatus('nope'), null)
+  assert.equal(normalizeStatus({}), null)
+  assert.equal(normalizeStatus({ latest: {} }), null)
+  assert.equal(normalizeStatus({ latest: { models: [] } }), null, 'latest.models 必须是对象')
+})
+
+test('normalizeStatus: 24h/7d 档 slots → 官方式细格子（grid + 每模型状态码串）', () => {
+  const d = normalizeStatus({
+    ...ST_RAW,
+    range: '24h',
+    slots: {
+      '2026-09-03': {
+        '10:05': { 'glm-5.3-flash': { s: 'degraded', ttfb: 3000, err: null } },
+        '10:00': { 'glm-5.3-flash': { s: 'up', ttfb: 500, err: null }, 'qwen3.7-max': { s: 'down', ttfb: null, err: 'HTTP 503' } },
+      },
+    },
+  }, '24h')
+  assert.equal(d.range, '24h')
+  // grid 展平序 = 日期 × 时刻 双排序（官方同款）；'@api' 无记录 → '-'
+  assert.deepEqual(d.slotGrid, [['2026-09-03', ['10:00', '10:05']]])
+  assert.equal(d.slotCodes['glm-5.3-flash'], 'ug')
+  assert.equal(d.slotCodes['qwen3.7-max'], 'd-')
+  assert.equal(d.slotCodes['@api'], '--')
+  // 90d 默认档不产细格子字段
+  const d90 = normalizeStatus(ST_RAW)
+  assert.equal(d90.range, '90d')
+  assert.equal(d90.slotGrid, null)
+  assert.equal(d90.slotCodes, null)
 })

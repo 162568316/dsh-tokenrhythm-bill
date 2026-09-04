@@ -1,7 +1,7 @@
 {
   "name": "dsh-tokenrhythm-bill",
-  "version": "0.3.2",
-  "description": "DeepSeek Harness 基元律动费用中心插件：模型清单与连通检测、账户余额、用量趋势与平台密钥管理",
+  "version": "0.3.3",
+  "description": "基元律动费用中心：账户余额与限时额度、按分类筛选的模型价格卡（含折扣价）、官方同款服务状态与平台密钥管理；凭据只存本机 host。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -25,7 +25,7 @@
     "balance",
     "usage",
     "tokenrhythm",
-    "connectivity",
+    "status",
     "dashboard"
   ],
   "license": "MIT",
