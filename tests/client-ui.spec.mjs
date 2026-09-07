@@ -239,6 +239,7 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(hostSrc.includes("'/dsh-tokenrhythm-bill/status'"), 'host 应有 /status 路由')
     assert.ok(hostSrc.includes('status.moonlink.top'), 'host 应指向状态页上游')
     assert.ok(hostSrc.includes('STATUS_TTL_MS'), 'host /status 应有 TTL 缓存')
+    assert.ok(hostSrc.includes("'Content-Type': 'application/json'"), '平台变更类请求应带 JSON Content-Type（缺失时平台 400「请求参数 类型错误」，密钥无法创建）')
     assert.ok(src.includes('基元律动-费用中心'), '入口/标题文案应为「基元律动-费用中心」')
   } finally {
     for (const fn of cleanups) fn()
