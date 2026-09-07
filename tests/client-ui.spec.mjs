@@ -205,6 +205,7 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(src.includes('数据账号'), '余额页签应标注数据归属账号')
     // 当日使用：输入/输出合一张卡，缓存命中 + 命中率合一张卡（新增指标，口径带 tooltip）。
     assert.ok(src.includes("'输入 / 输出'") && src.includes("'缓存命中 / 命中率'") && src.includes('cacheHitRate'), '当日使用应合并卡片并新增缓存命中率（缓存 ÷（输入+缓存），输出不计）')
+    assert.ok(src.includes('.dsh-mb-kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))'), '当日使用四卡应 auto-fit 塌缩空轨道、横向铺满整行')
     // 数据账号显示平台用户名而非登录手机号：manifest 带 accountName（/api/me 提取），
     // 标签优先取它，其次余额响应 account，都缺才回退登录标识 account（手机号）。
     assert.ok(src.includes('manifest.session.accountName') && src.includes('sessionAccountName ||'), '数据账号应优先显示平台用户名（manifest accountName）')
