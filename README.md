@@ -79,6 +79,8 @@ dsh plugin --profile web add dsh-tokenrhythm-bill
 
 > **平台登录接口不可用时**：浏览器登录 [tokenrhythm.studio](https://tokenrhythm.studio) → F12 → 应用 → Cookie → 复制 `tr_session` 的值，粘贴到「备用：粘贴网页会话 Cookie」框中保存（直接粘贴 `tr_session=sess_…` 整串也认）。Cookie 过期后余额页签会引导你回设置重新登录。
 
+> **会话自动续期**：登录成功后 Cookie 保存在本机并自动复用；粘贴新 Cookie 即完成切换账号（自动识别身份）。会话过期时，若该账号已保存密码则**自动重登同一账号**并继续刚才的操作，全程无感；未保存密码的账号才会提示重新登录。
+
 ## 隐私说明
 
 - 账号密码与会话 Cookie 只保存在**本机**，**永不下发浏览器**

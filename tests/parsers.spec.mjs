@@ -21,6 +21,8 @@ import {
   extractSessionCookie,
   extractCsrfCookie,
   stripYamlComments,
+  pickReloginAccount,
+  matchAccountName,
 } from '../lib/index.js'
 
 // ---- 测试夹具：flow 布局照抄 ~/.dsh/settings.yaml 的真实形态（多行大括号） ----
@@ -745,4 +747,33 @@ test('normalizeStatus: 24h/7d 档 slots → 官方式细格子（grid + 每模�
   assert.equal(d90.range, '90d')
   assert.equal(d90.slotGrid, null)
   assert.equal(d90.slotCodes, null)
+})
+
+// ---- pickReloginAccount / matchAccountName：cookie 即身份的保守守卫 ----
+
+test('pickReloginAccount: 仅 activeAccount 命中且有密码才返回（防串号守卫）', () => {
+  const accounts = [
+    { account: '13800000001', password: 'pw1', addedAt: 1 },
+    { account: 'alice', password: 'pw2', addedAt: 2 },
+  ]
+  // 命中（大小写不敏感）→ 返回该账号条目
+  assert.deepEqual(pickReloginAccount({ activeAccount: 'Alice', accounts }), accounts[1])
+  // activeAccount 为空（纯 cookie 粘贴 / 身份未知）→ null，即使有已存账号也不兜底
+  assert.equal(pickReloginAccount({ activeAccount: '', accounts }), null)
+  // activeAccount 不在列表（贴了别家 cookie）→ null
+  assert.equal(pickReloginAccount({ activeAccount: 'bob', accounts }), null)
+  // 命中但密码为空 → null
+  assert.equal(pickReloginAccount({ activeAccount: '13800000001', accounts: [{ account: '13800000001', password: '' }] }), null)
+  // 坏输入
+  assert.equal(pickReloginAccount(null), null)
+  assert.equal(pickReloginAccount({}), null)
+})
+
+test('matchAccountName: 大小写不敏感命中 / 空名 / 未命中 / 坏输入 → null', () => {
+  const accounts = [{ account: 'Alice', password: 'pw' }]
+  assert.equal(matchAccountName(accounts, ' alice '), accounts[0])
+  assert.equal(matchAccountName(accounts, 'Bob'), null)
+  assert.equal(matchAccountName(accounts, ''), null)
+  assert.equal(matchAccountName(accounts, null), null)
+  assert.equal(matchAccountName(null, 'Alice'), null)
 })

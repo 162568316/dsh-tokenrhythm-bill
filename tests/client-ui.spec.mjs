@@ -207,6 +207,14 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     // 标签优先取它，其次余额响应 account，都缺才回退登录标识 account（手机号）。
     assert.ok(src.includes('manifest.session.accountName') && src.includes('sessionAccountName ||'), '数据账号应优先显示平台用户名（manifest accountName）')
     assert.ok(hostSrc.includes('accountName: meName || null'), 'manifest 会话应带 accountName（平台用户名，两种登录模式都取）')
+    // 登录态自动续期（换 Cookie 即切号 + 401 自动重登，防串号保守守卫）。
+    assert.ok(hostSrc.includes('const hit = matchAccountName(state.accounts, sessionAccount)'), '粘贴新 Cookie 应解析身份并对齐绑定（命中已存账号才保留 activeAccount，否则清空）')
+    assert.ok(hostSrc.includes('pickReloginAccount') && hostSrc.includes('RELOGIN_COOLDOWN_MS'), '自动重登应有保守守卫（仅绑定账号可重登）与 30s 冷却')
+    assert.ok(hostSrc.includes('retried !== true && (await reloginActive())'), '余额主请求 401 应自动重登一次后整体重试')
+    assert.ok(hostSrc.includes("r2.status === 401 && (await reloginActive())"), 'trMutate 401 应在 CSRF 自愈之后走自动重登重试')
+    assert.ok(hostSrc.includes('valid: probe.valid'), 'manifest 与 /session GET 应带真实验活结果 valid（不只看 cookie 存在性）')
+    assert.ok(hostSrc.includes("sanitizeAccounts([...rest, { account, password, addedAt: Date.now() }])"), '账号密码登录成功后凭据应并入 accounts（过期后可自动重登）')
+    assert.ok(src.includes('会话已过期 · 自动重登未成功') && src.includes('已绑定'), '设置页应展示验活状态与粘贴绑定反馈')
     // 0.3.3 移除手动连通检测：连通点改为状态页探测自动点亮（只读、零扣费）。
     assert.ok(!src.includes('/model-check') && !hostSrc.includes('/model-check'), '手动连通检测应双端移除（/model-check）')
     assert.ok(!src.includes('checkModel'), 'checkModel 回调应已删除')
