@@ -204,7 +204,10 @@ test('client.js 可在桩环境完成 factory + apply（槽位注册齐全）', 
     assert.ok(src.includes('loadBalance, sessionAccount]'), '切换账号后应立即重拉余额')
     assert.ok(src.includes('数据账号'), '余额页签应标注数据归属账号')
     // 当日使用：输入/输出合一张卡，缓存命中 + 命中率合一张卡（新增指标，口径带 tooltip）。
-    assert.ok(src.includes("'输入 / 输出'") && src.includes("'缓存命中 / 命中率'") && src.includes('cacheHitRate'), '当日使用应合并卡片并新增缓存命中率（缓存 ÷（输入+缓存），输出不计）')
+    assert.ok(src.includes("'输入 / 输出'") && src.includes("'缓存命中 / 命中率'") && src.includes('cacheHitRate'), '当日使用应合并卡片并新增缓存命中率')
+    // 口径（实测修正）：平台 call-logs 的 input_tokens 已包含缓存命中（totalTokens=in+out、
+    // 费用反推吻合），命中率分母必须是「输入」本身，不得再加缓存（曾错算成 ÷(输入+缓存) → 98% 显示 49%）。
+    assert.ok(src.includes('const denom = day.inputTokens || 0') && src.includes('已包含缓存命中部分'), '缓存命中率应为 缓存 ÷ 输入（input_tokens 含缓存，分母不得重复计缓存）')
     assert.ok(src.includes('.dsh-mb-kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))'), '当日使用四卡应 auto-fit 塌缩空轨道、横向铺满整行')
     // 数据账号显示平台用户名而非登录手机号：manifest 带 accountName（/api/me 提取），
     // 标签优先取它，其次余额响应 account，都缺才回退登录标识 account（手机号）。
