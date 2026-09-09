@@ -377,3 +377,76 @@ test('Panel 状态页签真实渲染（24h/90d 两档，防 TDZ / 运行时崩�
     overrides = {}
   }
 })
+
+// ================= 阶跃（StepFun）Step Plan 接线（源码级断言） =================
+
+test('阶跃：标题位切换器 + 弹窗标题随提供商换「阶跃星辰」+ 双页签接线', () => {
+  assert.ok(src.includes('dsh-mb-head-left'), '标题位左侧组缺失（原标题槽保留）')
+  assert.ok(src.includes('dsh-mb-prov-btn'), '标题切换器分段按钮样式类缺失')
+  assert.ok(src.includes("switchProvider('step')") && src.includes("switchProvider('tr')"), '切换器未接 switchProvider')
+  assert.ok(/stepReady[\s\S]{0,400}dsh-mb-prov/.test(src), '切换器未受 stepReady（已配置阶跃）门控——未配置必须保持旧版标题')
+  assert.ok(/dsh-mb-head-title[\s\S]{0,40}effProv === 'step' \? STEP_ENTRY_LABEL : ENTRY_LABEL/.test(src), '弹窗标题未按提供商切换')
+  assert.ok(src.includes("const STEP_ENTRY_LABEL = '阶跃星辰-费用中心'"), '阶跃标题常量缺失')
+  assert.ok(/dsh-mb-entry-icon[\s\S]{0,80}stepProv \? StepMark\(\{ size: 16 \}\) : EntryMark/.test(src), '入口胶囊图标未按提供商切换')
+  assert.ok(src.includes("s.provider === 'step' && s.stepConfigured !== false && s.stepTakeover !== false"), '胶囊身份未受 stepConfigured/stepTakeover 门控（不接管时须整体回落基元）')
+  assert.ok(src.includes('stepTakeover: !(pf && pf.takeover === false)'), '「不接管」偏好未接入胶囊仲裁')
+  assert.ok(src.includes("['step-usage', '用量']") && src.includes("['step-account', '账户']"), '阶跃两页签缺失')
+  assert.ok(src.includes('renderStepUsageTab') && src.includes('renderStepAccountTab'), '阶跃页渲染函数缺失')
+  assert.ok(src.includes("lastStepTabRef"), '两家页签记忆未分离')
+  assert.ok(src.includes('60 * 1000'), '阶跃沿用 60s 轮询节奏')
+})
+
+test('阶跃：入口胶囊接管链路（面板切换 → store.provider → 胶囊值）', () => {
+  assert.ok(src.includes('function computeStepEntry'), '胶囊仲裁纯函数缺失')
+  assert.ok(src.includes("s.provider === 'step' && s.stepEntry"), 'EntryButton 未消费阶跃接管状态')
+  assert.ok(/stepOn \? s\.stepEntry\.value|if \(stepOn\) balText = s\.stepEntry\.value/.test(src), '胶囊金额未按接管态覆写')
+  assert.ok(src.includes('STEP_ENTRY_LABEL + \'（\' + s.stepEntry.value'), '阶跃模式下胶囊 tooltip 未带数值')
+  assert.ok(src.includes('hovCapable = hovItems.length > 0 && !s.open && !stepOn'), '阶跃接管时基元限时悬浮卡未让位')
+})
+
+test('阶跃：设置页账号卡保留；端点导入与控制台登录卡已按用户要求删除', () => {
+  assert.ok(src.includes('阶跃账号（Step Plan）'), '设置页阶跃卡缺失')
+  assert.ok(!src.includes('端点导入') && !src.includes('saveStepEndpoint'), '端点导入功能应整体移除（服务名已焊死代码）')
+  assert.ok(!src.includes('控制台登录') && !src.includes('testStepLogin'), '「控制台登录」卡与测试登录按钮应删除')
+  assert.ok(!src.includes('Step Plan 额度不在此列'), '余额口径提示行应删除')
+  assert.ok(src.includes('setStepEntryPref'), '胶囊接管偏好控件缺失')
+  assert.ok(src.includes('凭据只存本机'), '明文存储口径声明缺失')
+})
+
+test('阶跃：host 路由与登录通道（cookie-only 实测规则焊死在源码）', () => {
+  for (const p of ['/stepfun/plan', '/stepfun/balance', '/stepfun/accounts', '/stepfun/login-test',
+    '/stepfun/account/add', '/stepfun/account/remove', '/stepfun/account/use', '/stepfun/prefs']) {
+    assert.ok(hostSrc.includes('/dsh-tokenrhythm-bill' + p), '缺路由 ' + p)
+  }
+  // 浏览器登录功能已整体摘除（2026-09 定稿：密码直登为主轨且 JSON 通道实测稳定）
+  assert.ok(!hostSrc.includes('browser/start') && !hostSrc.includes('browser/status'), '浏览器登录路由应随功能一并移除')
+  assert.ok(!hostSrc.includes('stepfun/endpoint'), '端点导入路由应保持移除状态')
+  assert.ok(!hostSrc.includes('stepbrowser'), 'host 不得再引用 stepbrowser 模块')
+  assert.ok(!src.includes('startBrowserLogin'), '设置页浏览器登录入口应随功能一并移除')
+  assert.ok(!src.includes('会话由本地浏览器档案维持'), '浏览器徽标应随功能一并移除')
+  assert.ok(!hostSrc.includes('STEP_BROWSER_REAUTH'), '浏览器重登引导码应随功能一并移除')
+  assert.ok(!hostSrc.includes('stepVerifyUserSession'), '浏览器收割验证应随功能一并移除')
+  assert.ok(!hostSrc.includes('application/grpc-web+proto'), '登录不得回退 grpc-web 帧——全网独一份客户端正是限流根因（JSON 通道实测通过）')
+  assert.ok(hostSrc.includes('stepLib.STEP_DEV_SERVICE'), 'host 未使用焊死的服务名常量')
+  assert.ok(hostSrc.includes('QueryAccountBalance'), '余额未优先走控制台钱包接口（API key 通道只是兜底）')
+  assert.ok(hostSrc.includes("source: 'console'"), '余额响应未标注来源通道')
+  assert.ok(hostSrc.includes('stepScriptEnsureSession'), '密码轨未抽独立 ensure 函数')
+  assert.ok(/a\.password !== ''/.test(hostSrc), 'pickStepAccount 应只认有密码的账号（密码直登单轨）')
+  assert.ok(hostSrc.includes('JSON.stringify({ username, password })'), 'SignInByPassword 未按官方 JSON 协议 {username,password} 发送')
+  assert.ok(hostSrc.includes('Edg/146'), '登录 UA 未对齐真机 Edge（旧合成 UA 同样是异常流量特征）')
+  assert.ok(/cookieToken.*jar\['Oasis-Token'\].*token/s.test(hostSrc), '会话令牌必须优先取 Set-Cookie 长令牌——用 JSON 体短令牌会被平台判 "token is illegal"（实测 628 vs 316 字节两种令牌）')
+  assert.ok(!src.includes('内部接口'), '「内部接口」字样应按用户要求删除')
+  assert.ok(!src.includes('套餐摘要'), '账户页的套餐摘要卡应按用户要求删除')
+  assert.ok(src.includes('近 7 日 Credit 消耗'), '用量页缺近 7 日 Credit 消耗图（用户明确要 7 天用量图）')
+  assert.ok(src.includes('暂无调用明细'), '7 日图缺空态提示（平台无记录时不能静默消失）')
+  assert.ok(hostSrc.includes('startTime: usageStart, toTime: usageTo') && /String\(dayMs/.test(hostSrc), 'QueryStepPlanUsages 必须以「毫秒字符串」传时间——官方页面实证，数字/秒值都会被静默清零（恒空根因）')
+  assert.ok(src.includes('provider 与 view 必须同族'), '初始化 provider/view 同族修正缺失——持久化阶跃时面板会以「阶跃页签+基元内容」错位打开')
+  assert.ok(hostSrc.includes('stepThrottleGate'), '频控退避窗缺失（防连点加深封锁）')
+  assert.ok(hostSrc.includes("STEP_COOKIE_NAMES = new Set(['Oasis-Token', 'Oasis-Webid'])"), 'cookie 白名单缺失（防串带第三方 cookie）')
+  assert.ok(hostSrc.includes('header 通道一律') || hostSrc.includes('token is illegal'), 'cookie-vs-header 通道实测结论未沉淀到注释')
+  assert.ok(hostSrc.includes('STEP_THROTTLED'), '空响应频控（软拒绝）未显式识别')
+  assert.ok(hostSrc.includes('pending: true'), '限流期「先保存、解除后自动补登录」未接')
+  assert.ok(src.includes('限流解除后自动登录'), 'UI 未向用户交代延迟登录态')
+  assert.ok(hostSrc.includes('relogged !== true'), 'gs=16 重登重试防递归缺失')
+  assert.ok(hostSrc.includes('api.stepfun.com/v1/accounts'), '官方预付费余额独立链路缺失')
+})
