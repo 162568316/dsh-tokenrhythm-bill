@@ -441,6 +441,8 @@ test('阶跃：host 路由与登录通道（cookie-only 实测规则焊死在源
   assert.ok(src.includes('暂无调用明细'), '7 日图缺空态提示（平台无记录时不能静默消失）')
   assert.ok(hostSrc.includes('startTime: usageStart, toTime: usageTo') && /String\(dayMs/.test(hostSrc), 'QueryStepPlanUsages 必须以「毫秒字符串」传时间——官方页面实证，数字/秒值都会被静默清零（恒空根因）')
   assert.ok(src.includes('provider 与 view 必须同族'), '初始化 provider/view 同族修正缺失——持久化阶跃时面板会以「阶跃页签+基元内容」错位打开')
+  assert.ok(hostSrc.includes('truncated: total > items.length') && hostSrc.includes('TREND_MAX_PAGES = 60'), '近 7 天趋势必须 total 定页数 + 并行批拉 + 硬上限——旧版 15 页×100 静默截断，重用户旧日子显示幽灵 ¥0（实测 3538 次只统计到 1500）')
+  assert.ok(src.includes('trendMeta') && src.includes('金额仅统计最新'), '趋势截断提示缺失——被截断时合计次数应以平台 total 为准并注明金额口径')
   assert.ok(hostSrc.includes('stepThrottleGate'), '频控退避窗缺失（防连点加深封锁）')
   assert.ok(hostSrc.includes("STEP_COOKIE_NAMES = new Set(['Oasis-Token', 'Oasis-Webid'])"), 'cookie 白名单缺失（防串带第三方 cookie）')
   assert.ok(hostSrc.includes('header 通道一律') || hostSrc.includes('token is illegal'), 'cookie-vs-header 通道实测结论未沉淀到注释')
