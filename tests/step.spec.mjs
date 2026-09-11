@@ -1,8 +1,13 @@
 // 阶跃（StepFun）Step Plan：协议层（lib/step.js）+ host 净化器（lib/index.js 导出）
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
 import * as step from '../lib/step.js'
 import { sanitizeStepAccounts, sanitizeStepPrefs, pickStepAccount } from '../lib/index.js'
+
+const clientSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'client.js'), 'utf8')
 
 // ---- protobuf / grpc-web 帧 ----
 
@@ -224,4 +229,64 @@ test('step URL 常量与拼装：账号域两步 + 平台域 RPC 前缀', () => 
   assert.equal(step.stepSignInUrl(), 'https://account.stepfun.com/passport/proto.api.passport.v1.PassportService/SignInByPassword')
   assert.ok(step.stepRpcUrl('/api/step.openapi.devcenter.Foo/Get').startsWith('https://platform.stepfun.com/api/'))
   assert.equal(step.STEP_OASIS_HEADERS['oasis-appid'], '10300')
+})
+
+// ---- 胶囊仲裁：client.js computeStepEntry 与 step.js pickStepEntryDisplay 双实现同步 ----
+// client.js 跑在浏览器（无 Buffer，无法 import step.js），仲裁纯函数被迫存在两份；
+// 本测试用同一张用例表跑两份实现并逐例对拍——任何一处单边改动立即红，防 UI 与 host 测试各说各话。
+
+/** 从 client.js 源码提取函数声明（先跳过参数表——可能是解构 {..}，再对函数体括号配平） */
+function extractFnSource(src, name) {
+  const at = src.indexOf('function ' + name + '(')
+  assert.ok(at >= 0, 'client.js 应含 function ' + name)
+  let i = src.indexOf('(', at) + 1
+  let paren = 1
+  while (i < src.length && paren > 0) {
+    const c = src[i++]
+    if (c === '(') paren++
+    else if (c === ')') paren--
+  }
+  while (i < src.length && src[i] !== '{') i++
+  let depth = 0
+  while (i < src.length) {
+    const c = src[i++]
+    if (c === '{') depth++
+    else if (c === '}') { depth--; if (depth === 0) return src.slice(at, i) }
+  }
+  throw new Error('function ' + name + ' 括号不配平')
+}
+
+test('胶囊仲裁：client computeStepEntry 与 host pickStepEntryDisplay 全用例同步（防双实现漂移）', () => {
+  const clientEntry = new Function('return ' + extractFnSource(clientSrc, 'computeStepEntry'))()
+  const cases = [
+    { name: 'auto：Credit 月池优先（round 到 0.1%）', prefs: {}, plan: { credit: { credits: { total: 400000000, residual: 391304080 } } }, balance: null, want: { label: '阶跃', value: '97.8%' } },
+    { name: 'auto：无 Credit 落官方余额', prefs: {}, plan: { credit: null }, balance: { account: { balance: 12.34 } }, want: { label: '阶跃', value: '¥12.34' } },
+    { name: 'auto：total=0 视为无 Credit → 余额', prefs: {}, plan: { credit: { credits: { total: 0, residual: 0 } } }, balance: { account: { balance: 3.2 } }, want: { label: '阶跃', value: '¥3.20' } },
+    { name: 'auto：两者皆无 → 回落基元', prefs: {}, plan: null, balance: null, want: null },
+    { name: 'credits 模式：只有余额 → 回落基元', prefs: { mode: 'credits' }, plan: null, balance: { account: { balance: 9 } }, want: null },
+    { name: 'balance 模式：只有 Credit → 回落基元', prefs: { mode: 'balance' }, plan: { credit: { credits: { total: 100, residual: 50 } } }, balance: null, want: null },
+    { name: 'balance 模式：余额可用', prefs: { mode: 'balance' }, plan: null, balance: { account: { balance: 0.5 } }, want: { label: '阶跃', value: '¥0.50' } },
+    { name: 'takeover=false → 永不接管', prefs: { takeover: false }, plan: { credit: { credits: { total: 100, residual: 50 } } }, balance: { account: { balance: 1 } }, want: null },
+    { name: 'clamp 上限：residual>total → 100%', prefs: {}, plan: { credit: { credits: { total: 10, residual: 20 } } }, balance: null, want: { label: '阶跃', value: '100%' } },
+    { name: 'clamp 下限：residual<0 → 0%', prefs: {}, plan: { credit: { credits: { total: 100, residual: -5 } } }, balance: null, want: { label: '阶跃', value: '0%' } },
+    { name: '非法 mode 未净化也按 auto（两实现一致）', prefs: { mode: 'weird' }, plan: { credit: { credits: { total: 100, residual: 50 } } }, balance: null, want: { label: '阶跃', value: '50%' } },
+    { name: 'balance 为 NaN 不接管（Number.isFinite 拦截）', prefs: {}, plan: null, balance: { account: { balance: NaN } }, want: null },
+    { name: 'account 缺失 → 回落基元', prefs: {}, plan: null, balance: {}, want: null },
+  ]
+  for (const c of cases) {
+    const got = clientEntry({ plan: c.plan, balance: c.balance, prefs: c.prefs })
+    const ref = step.pickStepEntryDisplay({
+      activeProvider: 'step',
+      credit: c.plan && c.plan.credit,
+      account: c.balance && c.balance.account,
+      prefs: c.prefs,
+    })
+    const refNorm = ref.provider === 'tr' ? null : { label: ref.label, value: ref.value }
+    if (ref.provider === 'step') {
+      assert.equal(ref.label, '阶跃', 'host 侧接管时 label 应为「阶跃」：' + c.name)
+      assert.equal(typeof ref.value, 'string', 'host 侧接管时 value 应为字符串：' + c.name)
+    }
+    assert.deepEqual(got, c.want, 'client 侧 computeStepEntry：' + c.name)
+    assert.deepEqual(refNorm, c.want, 'host 侧 pickStepEntryDisplay：' + c.name)
+  }
 })

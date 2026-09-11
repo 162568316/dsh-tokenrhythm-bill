@@ -450,3 +450,18 @@ test('阶跃：host 路由与登录通道（cookie-only 实测规则焊死在源
   assert.ok(hostSrc.includes('relogged !== true'), 'gs=16 重登重试防递归缺失')
   assert.ok(hostSrc.includes('api.stepfun.com/v1/accounts'), '官方预付费余额独立链路缺失')
 })
+
+test('阶跃：近 7 日图标题诚实化——旧记录不冒充近 7 日（stale 分支焊死在源码）', () => {
+  // 平台无调用日不留痕，最近 7 个「有记录日」可能全部在数周前：此时标题必须降级并标注最早日期
+  assert.ok(src.includes("'Credit 消耗（最近 7 个有记录日）'"), '缺 stale 分支标题——旧记录仍会冒充「近 7 日」')
+  assert.ok(src.includes("'近 7 日 Credit 消耗'"), '真近 7 日分支标题缺失')
+  assert.ok(src.includes("'最早记录 '"), '缺最早记录日期标注（用户无法发现数据是旧的）')
+  assert.ok(src.includes('Date.now() - 7 * 86400000'), 'stale 判定（7×24h 边界）缺失')
+})
+
+test('阶跃：账号 remove/use 与 add 同口径大小写不敏感（防变体账号删不掉/切不到）', () => {
+  // add 去重按 toLowerCase；remove/use 若精确匹配，大小写变体请求会静默失败（remove 还返回 ok）
+  assert.ok(hostSrc.includes('a.username.toLowerCase() !== key'), 'remove 过滤应小写比较')
+  assert.ok(hostSrc.includes('a.username.toLowerCase() === key'), 'use 查找应小写比较')
+  assert.ok(hostSrc.includes("key !== '' && state.step.activeAccount.toLowerCase() === key"), '空用户名不得误清活跃账号与会话')
+})
