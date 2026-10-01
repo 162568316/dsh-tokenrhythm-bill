@@ -103,7 +103,8 @@
 - **压缩** = 执行官方的 `/compact`：把较早的对话历史替换为一条摘要，**不消耗模型轮次**。命令自己的结果仍照常出现在**对话里的命令行**（DSH 渲染 `conversation.chat.commandview`）：没有可压缩历史是 `No compactable history yet.`，轮次占用中是平台侧的固定文案「暂不可用」——**按钮这一侧不再复述这些文字**。**上下文占用超过 60% 时按钮转红**（浅红底 + 红图标 + 红描边），当前百分比也写进 tooltip；口径与官方 ContextMeter 逐字一致：`min(100, round((projectedTokens ?? pressureTokens) / contextWindow * 100))`，拿不到投影时不红
 - **计划** = 切换计划模式：未激活时执行 `/plan`；激活后按钮转蓝（accent 高亮的「计划中」态），再点执行 `/plan off` 退出。状态读的是**宿主投影**（`plan` 的 `{active, pending}`，宿主折叠值）而非本地猜测——与官方计划片同一数据源
 - **不再显示 `/plan` 在对话里的命令行**：那句「Plan mode on. Use /plan off to leave.」/「Plan mode off.」是命令的返回值文本，DSH 会把命令运行渲染成一行（`conversation.chat.commandview`，按命令名分派）。本插件占住 `plan` 这个键并渲染空，那一行就不再出现。**只藏 `plan`**——`/compact` 的结果（压缩了多少条历史、省了多少 token）是有效信息，照常保留
-- **命令桥只传两个实参**：远端签名是 `commands.execute(agentId, line)`，第三个位置属于**调用方的取消信号**（typert descriptor 的 `cancellation.parameter`，客户端网关会执行 `AbortSignal.any([token.abort.signal, callerSignal])`）——多传一个 `[]` 会当场抛 TypeError、命令根本不会执行（实测踩过，回归测试现已焊死实参个数）
+- **命令桥的实参个数随 DSH 版本不同，必须读描述符、不能写死**：桌面端 DSH 2.0.x 是 `commands.execute(agentId, line, submittedAttachments)` **三个**业务参数（之后才是可选的取消信号）；较早的 CLI（`@deepseek-ai/dsh` 0.1.0-rc.6）只有 `(agentId, line)` **两个**。少传会被网关拦下（`expected 3 business argument(s) …, got 2`），多传的那个会被当成取消信号喂给 `AbortSignal.any` 抛 TypeError——两次都表现为「点了没反应」（实测各踩一次）。现在客户端从 typert 注册表读出 `commands/execute` 描述符的 `parameters.length`，按它传实参，两种版本都对
+- **明细字段不并排**：模型卡的规格与价格原本拆成两个 `dl`、各占一栏，现在合成一个单栏 `dl` 逐行列出（用户指定「不要并排」）
 - 执行期间两个按钮都禁用，防重复提交；执行期间切了会话则丢弃这次结果，不会串到另一个会话
 - **边界**：本槽位在轮次进行中**依然渲染**（DSH 的 `.trailing` 无条件渲染 `rightItems`，只有模型选择座会进入 locked 态），所以「轮次中不可用」这件事必须由按钮自己禁用表达，而不是指望它被隐藏；没挂 `dsh-command-compact` / `dsh-plan-mode` 时，对应按钮不出现（不摆一个必然报错的按钮）；命令桥缺失时连注册都不发生，**面板与余额功能完全不受影响**
 - 计划模式激活时官方还会在输入行最左端显示一个「计划」片（那是退出入口），两者并存、互不冲突
