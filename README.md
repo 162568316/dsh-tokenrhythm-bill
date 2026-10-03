@@ -1,6 +1,6 @@
 # dsh-tokenrhythm-bill
 
-**基元律动费用中心** —— DeepSeek Harness（DSH）插件，把[基元律动 tokenrhythm.studio](https://tokenrhythm.studio) 的模型清单、账户余额、用量、密钥管理与服务状态，集中到侧栏底部一个小面板里。
+**基元律动费用中心** —— DeepSeek Harness（DSH）插件，把[基元律动 tokenrhythm.studio](https://tokenrhythm.studio) 的模型清单、账户余额、用量与密钥管理，集中到侧栏底部一个小面板里；另支持阶跃星辰（StepFun）Step Plan 与 ZCode 桌面端套餐额度的可选接入。
 
 在 DSH 侧栏底部（设置按钮上方）点击「基元律动-费用中心」入口即可打开可拖拽面板；也可以直接按 **`Ctrl+J`**（macOS `Cmd+J`）呼出/收起。入口左侧是**品牌标 + 名称**，右侧常驻**总余额胶囊**（切号即刷、预警转琥珀色）；**悬停入口**可浮出**限时余额时间线**——逐笔列出每笔限时额度和「N 天后失效」（实时计算，无限时额度时不显示）；侧栏收起时只保留品牌图标。
 

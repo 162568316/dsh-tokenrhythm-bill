@@ -25,10 +25,10 @@
   "url": "https://github.com/162568316/dsh-tokenrhythm-bill",
   "category": ["usage", "model"],
   "description": {
-    "en": "Tokenrhythm (基元律动) finance dashboard for DeepSeek Harness: balance & expiring credits, category-filtered model price cards (with discounts), an official-style service status view (24h / 7d / 90d) and platform key management, auto-refreshing every 60 s; login via platform account or session cookie — credentials stay on the local host only.",
-    "zh": "基元律动费用中心：账户余额与限时额度、按分类筛选的模型价格卡（含折扣价）、官方同款服务状态（24小时 / 7天 / 90天）与平台密钥管理，60 秒自动刷新；支持平台账号或 Cookie 登录，凭据只存本机 host。"
+    "en": "Finance dashboard for DeepSeek Harness (DSH): balance & expiring credits, category-filtered model price cards (discounts + peak/off-peak pricing), a 30-day usage heatmap broken down by model/client, self-key connectivity checks and platform key management; optional StepFun (阶跃) tab with per-account plan & balance, and an optional ZCode tab reading local desktop credentials for plan quota (off by default). All credentials stay on the local host only.",
+    "zh": "DeepSeek Harness 费用中心：账户余额与限时额度、按分类筛选的模型价格卡（含折扣与峰谷分时计价）、近 30 天用量热力日历（按模型/客户端拆分）、用自己 Key 实测的连通检测与平台密钥管理；阶跃页签按账号展示套餐与余额；可选开启 ZCode 页签读取本机桌面端凭证查看套餐额度（默认关闭）。凭据只存本机。"
   },
-  "install": "dsh plugin --profile web add dsh-tokenrhythm-bill",
+  "install": "dsh plugin add dsh-tokenrhythm-bill",
   "npm": "dsh-tokenrhythm-bill"
 }
 ```
