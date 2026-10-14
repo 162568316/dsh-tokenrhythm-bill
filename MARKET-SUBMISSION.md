@@ -25,8 +25,8 @@
   "url": "https://github.com/162568316/dsh-tokenrhythm-bill",
   "category": ["usage", "model"],
   "description": {
-    "en": "Finance dashboard for DeepSeek Harness (DSH): balance & expiring credits (with an experience-card redeem-code entry) and a realname badge next to the data account, category-filtered model price cards (discounts + peak/off-peak pricing), a 30-day usage heatmap broken down by model/client, self-key connectivity checks and platform key management; per-system switches under Settings (基元律动 only by default, at least one stays on) gate the StepFun (阶跃) tab with per-account avatar, realname status, plan & balance, and a ZCode tab reading local desktop credentials for plan quota. All credentials stay on the local host only.",
-    "zh": "DeepSeek Harness 费用中心：账户余额与限时额度（含体验卡兑换码入口，数据账号行带实名状态徽章）、按分类筛选的模型价格卡（含折扣与峰谷分时计价）、近 30 天用量热力日历（按模型/客户端拆分）、用自己 Key 实测的连通检测与平台密钥管理；基元律动 / 阶跃 / ZCode 三家在「设置 → 系统管理」里独立开关（默认只显示基元，至少留一个）；阶跃页签按账号展示头像、实名状态、套餐与余额；ZCode 页签读取本机桌面端凭证查看套餐额度。凭据只存本机。"
+    "en": "Finance dashboard for DeepSeek Harness (DSH): balance & expiring credits (with an experience-card redeem-code entry) and a realname badge next to the data account, category-filtered model price cards (discounts + peak/off-peak pricing), a 30-day usage heatmap broken down by model/client, self-key connectivity checks and platform key management; per-system switches under Settings (基元律动 only by default, at least one stays on) gate the StepFun (阶跃) tab with per-account avatar, realname status, plan & balance, a ZCode tab reading local desktop credentials for plan quota, and a TierFlow (清枢智汇) pair of tabs for account info and plan/subscription quota. All credentials stay on the local host only.",
+    "zh": "DeepSeek Harness 费用中心：账户余额与限时额度（含体验卡兑换码入口，数据账号行带实名状态徽章）、按分类筛选的模型价格卡（含折扣与峰谷分时计价）、近 30 天用量热力日历（按模型/客户端拆分）、用自己 Key 实测的连通检测与平台密钥管理；基元律动 / 阶跃 / ZCode / 清枢智汇 四家在「设置 → 系统管理」里独立开关（默认只显示基元，至少留一个）；阶跃页签按账号展示头像、实名状态、套餐与余额；ZCode 页签读取本机桌面端凭证查看套餐额度；清枢智汇页签展示用户信息与套餐用量。凭据只存本机。"
   },
   "install": "dsh plugin add dsh-tokenrhythm-bill",
   "npm": "dsh-tokenrhythm-bill"
