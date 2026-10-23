@@ -1,5 +1,6 @@
 node_modules/
 tests/
+design/
 *.log
 .DS_Store
 .zcode/
